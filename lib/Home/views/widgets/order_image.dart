@@ -3,7 +3,7 @@ import 'package:axa_driver/core/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 
 class OrderImage extends StatelessWidget {
-  const OrderImage({required this.size, this.imageUrl});
+  const OrderImage({super.key, required this.size, this.imageUrl});
 
   final double size;
   final String? imageUrl;
@@ -19,7 +19,7 @@ class OrderImage extends StatelessWidget {
             ? Image.network(
                 imageUrl!,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _placeholder(),
+                errorBuilder: (_, _, _) => _placeholder(),
               )
             : _placeholder(),
       ),

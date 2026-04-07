@@ -174,7 +174,7 @@ String? firstImageUrl(OrderModel order) {
 
 
 class InfoRow extends StatelessWidget {
-  const InfoRow({
+  const InfoRow({super.key, 
     required this.icon,
     required this.text,
     required this.iconSize,

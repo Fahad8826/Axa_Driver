@@ -11,7 +11,7 @@ import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class CurrentDeliveryCard extends StatelessWidget {
-  const CurrentDeliveryCard({required this.order, required this.layout});
+  const CurrentDeliveryCard({super.key, required this.order, required this.layout});
 
   final OrderModel order;
   final AppLayout layout;

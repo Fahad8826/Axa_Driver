@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 
 class ErrorView extends StatelessWidget {
-  const ErrorView({required this.message, required this.onRetry});
+  const ErrorView({super.key, required this.message, required this.onRetry});
   final String message;
   final VoidCallback onRetry;
 

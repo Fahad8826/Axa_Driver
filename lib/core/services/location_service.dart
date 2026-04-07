@@ -5,7 +5,6 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter_background_service_android/flutter_background_service_android.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geolocator/geolocator.dart';
@@ -18,8 +17,7 @@ String get _wsBase {
   if (base == null || base.isEmpty) {
     throw Exception('BASE_URL not found in .env');
   }
-  return base.replaceFirst('https://', 'wss://').replaceFirst('http://', 'ws://') +
-      '/ws/driver-location/';
+  return '${base.replaceFirst('https://', 'wss://').replaceFirst('http://', 'ws://')}/ws/driver-location/';
 }
 
 const int _intervalSeconds = 30;

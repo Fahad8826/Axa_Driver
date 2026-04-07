@@ -50,7 +50,7 @@ class _ProfileShimmerState extends State<ProfileShimmer>
   }) =>
       AnimatedBuilder(
         animation: _animation,
-        builder: (_, __) => Container(
+        builder: (_, _) => Container(
           width: width,
           height: height,
           decoration: BoxDecoration(

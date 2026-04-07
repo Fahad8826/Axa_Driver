@@ -156,6 +156,7 @@ class NavigationController extends GetxController {
   // ── Fetch the real road path ──────────────────────────────────────────────
   Future<void> _fetchRoadPath() async {
   final origin = currentPosition.value;
+  debugPrint('Current position: $origin');
   if (origin == null) return;
 
   try {
@@ -175,6 +176,10 @@ class NavigationController extends GetxController {
         mode: TravelMode.driving,
       ),
     );
+
+    debugPrint('Polyline points count: ${result.points.length}');
+    debugPrint('Polyline error: ${result.errorMessage}');
+    debugPrint('API Key used: ${dotenv.env['GOOGLE_MAPS_KEY']}');
 
     if (result.points.isNotEmpty) {
       polylines.assignAll({

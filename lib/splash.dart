@@ -146,7 +146,7 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
           // ── Shine sweep overlay ────────────────────────────────────────
           AnimatedBuilder(
             animation: _shineAnim,
-            builder: (_, __) {
+            builder: (_, _) {
               return IgnorePointer(
                 child: Transform.translate(
                   offset: Offset(size.width * _shineAnim.value, 0),

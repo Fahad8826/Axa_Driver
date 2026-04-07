@@ -10,23 +10,17 @@ class NavigationView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // FIX: Use Get.find() — the controller was already registered by the route.
-    // Using Get.put() inside build() creates a NEW controller on every rebuild,
-    // causing duplicate init calls, memory leaks and broken state.
-    // Register it in your GetX route binding or with Get.lazyPut() instead.
     final ctrl = Get.find<NavigationController>();
 
     return Scaffold(
       body: Stack(
         children: [
           // ── Full-screen Google Map ─────────────────────────────────────────
-          // FIX: The map itself does NOT need to be inside Obx.
-          // GoogleMap re-renders internally when markers/polylines change through
-          // its own properties. Wrapping in Obx causes a full widget rebuild
-          // (including re-creating the native map view) on every state change,
-          // which is what caused the extreme slowness.
-          GetBuilder<NavigationController>(
-            builder: (ctrl) => GoogleMap(
+          // FIX: Use Obx so the map rebuilds when RxSet markers/polylines change.
+          // GetBuilder only responds to update() calls — it ignores Rx observables,
+          // which is why the polyline never appeared even though 312 points were fetched.
+          Obx(
+                () => GoogleMap(
               initialCameraPosition: CameraPosition(
                 target: LatLng(ctrl.destLat, ctrl.destLng),
                 zoom: 14,
@@ -62,14 +56,12 @@ class NavigationView extends StatelessWidget {
           ),
 
           // ── Floating STATS Card ────────────────────────────────────────────
-          // FIX: This Obx is correct — it only rebuilds this small card widget,
-          // not the whole screen. Keep this pattern for lightweight widgets.
           Positioned(
             top: 100,
             left: 16,
             right: 16,
             child: Obx(
-              () => AnimatedOpacity(
+                  () => AnimatedOpacity(
                 opacity: ctrl.isLoading.value ? 0 : 1,
                 duration: const Duration(milliseconds: 300),
                 child: Container(
@@ -85,11 +77,11 @@ class NavigationView extends StatelessWidget {
                   child: Row(
                     children: [
                       Obx(() => _StatItem(
-                            label: 'Distance',
-                            value: ctrl.distance.value,
-                            icon: Icons.directions_car_rounded,
-                            color: AppColors.primary,
-                          )),
+                        label: 'Distance',
+                        value: ctrl.distance.value,
+                        icon: Icons.directions_car_rounded,
+                        color: AppColors.primary,
+                      )),
                       Container(
                         width: 1,
                         height: 30,
@@ -97,11 +89,11 @@ class NavigationView extends StatelessWidget {
                         color: AppColors.divider,
                       ),
                       Obx(() => _StatItem(
-                            label: 'Duration',
-                            value: ctrl.duration.value,
-                            icon: Icons.access_time_rounded,
-                            color: AppColors.statusPending,
-                          )),
+                        label: 'Duration',
+                        value: ctrl.duration.value,
+                        icon: Icons.access_time_rounded,
+                        color: AppColors.statusPending,
+                      )),
                     ],
                   ),
                 ),
@@ -173,24 +165,6 @@ class NavigationView extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Binding — register this in your GetX route config
-// ─────────────────────────────────────────────────────────────────────────────
-//
-// class NavigationBinding extends Bindings {
-//   @override
-//   void dependencies() {
-//     Get.lazyPut<NavigationController>(() => NavigationController());
-//   }
-// }
-//
-// Then in your AppRoutes:
-//   GetPage(
-//     name: Routes.navigation,
-//     page: () => const NavigationView(),
-//     binding: NavigationBinding(),
-//   )
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Map FAB button
@@ -304,18 +278,21 @@ class _BottomSheetContent extends StatelessWidget {
                     ],
                   ),
                 ),
-                ElevatedButton.icon(
-                  onPressed: onNavigate,
-                  icon: const Icon(Icons.navigation_rounded, size: 18),
-                  label: const Text('Navigate'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    minimumSize: const Size(60, 28),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
+                // ElevatedButton.icon(
+                //   onPressed: onNavigate,
+                //   icon: const Icon(Icons.navigation_rounded, size: 18),
+                //   label: const Text('Navigate'),
+                //   style: ElevatedButton.styleFrom(
+                //     backgroundColor: AppColors.primary,
+                //     minimumSize: const Size(60, 28),
+                //     shape: RoundedRectangleBorder(
+                //       borderRadius: BorderRadius.circular(12),
+                //     ),
+                //   ),
+                // ),
+
+
+
               ],
             ),
           ),
@@ -354,21 +331,21 @@ class _BottomSheetContent extends StatelessWidget {
               child: Column(
                 children: [
                   ...order.waterCans.map(
-                    (c) => _OrderItemRow(
+                        (c) => _OrderItemRow(
                       imageUrl: c.image,
                       label: c.name,
                       sub: '${c.quantity} × ${c.litres}L',
                     ),
                   ),
                   ...order.products.map(
-                    (p) => _OrderItemRow(
+                        (p) => _OrderItemRow(
                       imageUrl: p.image,
                       label: p.name,
                       sub: 'Qty: ${p.quantity}',
                     ),
                   ),
                   ...order.addons.map(
-                    (a) => _OrderItemRow(
+                        (a) => _OrderItemRow(
                       imageUrl: a.image,
                       label: a.name,
                       sub: 'Add-on',
@@ -488,10 +465,10 @@ class _OrderItemRow extends StatelessWidget {
               height: 48,
               child: imageUrl != null && imageUrl!.isNotEmpty
                   ? Image.network(
-                      imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _placeholder(),
-                    )
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => _placeholder(),
+              )
                   : _placeholder(),
             ),
           ),
@@ -537,11 +514,11 @@ class _OrderItemRow extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-        color: AppColors.primarySurface,
-        child: const Icon(
-          Icons.water_drop_rounded,
-          color: AppColors.primary,
-          size: 22,
-        ),
-      );
+    color: AppColors.primarySurface,
+    child: const Icon(
+      Icons.water_drop_rounded,
+      color: AppColors.primary,
+      size: 22,
+    ),
+  );
 }

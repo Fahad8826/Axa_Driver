@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class NextDeliveryCard extends StatelessWidget {
-  const NextDeliveryCard({required this.order, required this.layout});
+  const NextDeliveryCard({super.key, required this.order, required this.layout});
 
   final OrderModel order;
   final AppLayout layout;
@@ -71,6 +71,9 @@ class NextDeliveryCard extends StatelessWidget {
                   height: layout.buttonHeightSm,
                   child: ElevatedButton(
                     onPressed: () {
+                      debugPrint('Navigating with lat: ${order.latitude}, lng: ${order.longitude}');
+                      debugPrint('Parsed lat: ${double.tryParse(order.latitude)}, lng: ${double.tryParse(order.longitude)}');
+
                       Get.toNamed(
                         AppRoutes.navigation,
                         arguments: {
