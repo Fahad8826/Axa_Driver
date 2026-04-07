@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "574223810479",
+    "project_id": "axa-project-2b21a",
+    "storage_bucket": "axa-project-2b21a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:574223810479:android:6c9950b6f108ae284a795a",
+        "android_client_info": {
+          "package_name": "com.techfifo.axa_driver"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAfhHK7S9PqU25geNYVeC-LDJ0azlma0wc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

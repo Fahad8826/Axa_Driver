@@ -1,0 +1,4 @@
+{
+    "envWatcher.enabled": true,
+    "java.configuration.updateBuildConfiguration": "interactive"
+}
