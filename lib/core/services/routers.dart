@@ -11,6 +11,9 @@ import 'package:axa_driver/splash.dart';
 import 'package:axa_driver/navigation/view/navigation_view.dart';
 import 'package:get/get.dart';
 
+import '../../scanner/controller/scanner_controller.dart';
+import '../../scanner/view/scanner_view.dart';
+
 class AppPages {
   static const initial = AppRoutes.splash;
 
@@ -56,6 +59,13 @@ class AppPages {
         );
       }),
     ),
+    GetPage(
+      name: AppRoutes.scanner,
+      page: () => const ScannerView(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut<ScannerController>(() => ScannerController());
+      }),
+    ),
   ];
 }
 
@@ -66,4 +76,5 @@ abstract class AppRoutes {
   static const home = '/home';
   static const navbar = '/navbar';
   static const navigation = '/navigation';
+  static const scanner = '/scanner';
 }

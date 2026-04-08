@@ -291,7 +291,18 @@ class _BottomSheetContent extends StatelessWidget {
                 //   ),
                 // ),
 
-
+                ElevatedButton.icon(
+                  onPressed: ()=>Get.toNamed("/scanner"),
+                  icon: const Icon(Icons.scanner, size: 18),
+                  label: const Text('Scanner'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    minimumSize: const Size(60, 28),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
 
               ],
             ),

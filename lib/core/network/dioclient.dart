@@ -53,11 +53,18 @@ class _AuthInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    if (err.response?.statusCode == 401 ||
-        err.response?.statusCode == 403) {
+    final statusCode = err.response?.statusCode;
+    final responseData = err.response?.data;
+    
+    bool isAuthError = statusCode == 401 || statusCode == 403;
+    bool isUserNotFound = statusCode == 404 && responseData is Map && 
+        (responseData['message']?.toString().toLowerCase().contains('user') == true ||
+         responseData['error']?.toString().toLowerCase().contains('user') == true);
+
+    if (isAuthError || isUserNotFound) {
       await AppPrefs.clear();
       Get.offAllNamed(AppRoutes.login);
-      return; // Don't call handler.next() — navigation already handled
+      return handler.reject(err); // Reject the request so it does not hang
     }
     handler.next(err);
   }
