@@ -12,6 +12,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class NavigationController extends GetxController {
   final Dio _dio = DioClient.dio;
 
+  /// Guard flag — set to true in [onClose] so that any pending async
+  /// work stops touching the already-disposed [GoogleMapController].
+  bool _isDisposed = false;
+
   // ── Args passed from calling screen ───────────────────────────────────────
   late final int orderId;
   late final double destLat;
@@ -45,17 +49,23 @@ class NavigationController extends GetxController {
   }
 
   Future<void> _init() async {
-    // FIX: Run location fetch and order fetch concurrently to reduce wait time
+    // Run location fetch and order fetch concurrently to reduce wait time
     await Future.wait([
       _fetchLocation(),
       fetchOrderDetail(),
     ]);
 
+    // Bail out if the page was closed while we were fetching
+    if (_isDisposed) return;
+
     // These depend on both location + order being ready
     _buildMarkers();
     await _fetchRoadPath();
 
-    // FIX: Fit bounds AFTER location is confirmed and map may already be ready
+    // Bail out again — _fetchRoadPath is async
+    if (_isDisposed) return;
+
+    // Fit bounds AFTER location is confirmed and map may already be ready
     _fitBoundsIfReady();
   }
 
@@ -228,8 +238,14 @@ class NavigationController extends GetxController {
   }
 
   void onMapCreated(GoogleMapController controller) {
+    // If the widget was already disposed before the map finished creating,
+    // dispose the new controller immediately and do nothing else.
+    if (_isDisposed) {
+      controller.dispose();
+      return;
+    }
     mapController = controller;
-    // FIX: Fit bounds here — by the time the map is ready _init() has
+    // Fit bounds here — by the time the map is ready _init() has
     // completed (both futures resolved), so currentPosition is populated.
     _fitBoundsIfReady();
   }
@@ -238,7 +254,7 @@ class NavigationController extends GetxController {
   // onMapCreated (map ready before data) and end of _init (data ready before map)
   void _fitBoundsIfReady() {
     final origin = currentPosition.value;
-    if (origin == null || mapController == null) return;
+    if (_isDisposed || origin == null || mapController == null) return;
 
     final dest = LatLng(destLat, destLng);
 
@@ -260,6 +276,7 @@ class NavigationController extends GetxController {
   }
 
   void centerOnDestination() {
+    if (_isDisposed) return;
     mapController?.animateCamera(
       CameraUpdate.newLatLngZoom(LatLng(destLat, destLng), 15),
     );
@@ -281,7 +298,9 @@ class NavigationController extends GetxController {
 
   @override
   void onClose() {
+    _isDisposed = true;
     mapController?.dispose();
+    mapController = null;
     super.onClose();
   }
 }

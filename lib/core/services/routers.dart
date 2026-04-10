@@ -6,6 +6,7 @@ import 'package:axa_driver/navbar/controller/bottomnav_controller.dart';
 import 'package:axa_driver/navbar/view/bottom_view.dart';
 import 'package:axa_driver/Onboarding/onboarding.dart';
 import 'package:axa_driver/navigation/controller/navigation_controller.dart';
+import 'package:axa_driver/orders/controller/orders_controller.dart';
 import 'package:axa_driver/profile/controller/profile_controller.dart';
 import 'package:axa_driver/splash.dart';
 import 'package:axa_driver/navigation/view/navigation_view.dart';
@@ -13,6 +14,8 @@ import 'package:get/get.dart';
 
 import '../../scanner/controller/scanner_controller.dart';
 import '../../scanner/view/scanner_view.dart';
+import 'package:axa_driver/leave/controller/leave_controller.dart';
+import 'package:axa_driver/leave/view/leave_list_view.dart';
 
 class AppPages {
   static const initial = AppRoutes.splash;
@@ -29,6 +32,7 @@ class AppPages {
 
         Get.lazyPut<ProfileController>(() => ProfileController(), fenix: true);
         Get.lazyPut<HomeController>(() => HomeController(), fenix: true);
+        Get.lazyPut<OrdersController>(() => OrdersController(), fenix: true);
       }),
     ),
     GetPage(name: AppRoutes.splash, page: () => const SplashView()),
@@ -53,10 +57,7 @@ class AppPages {
       page: () => const NavigationView(),
       transition: Transition.rightToLeft,
       binding: BindingsBuilder(() {
-        Get.lazyPut<NavigationController>(
-          () => NavigationController(),
-          fenix: true,
-        );
+        Get.put<NavigationController>(NavigationController());
       }),
     ),
     GetPage(
@@ -65,6 +66,14 @@ class AppPages {
       binding: BindingsBuilder(() {
         Get.lazyPut<ScannerController>(() => ScannerController());
       }),
+    ),
+    GetPage(
+      name: AppRoutes.leave,
+      page: () => const LeaveListView(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut<LeaveController>(() => LeaveController());
+      }),
+      transition: Transition.rightToLeft,
     ),
   ];
 }
@@ -77,4 +86,5 @@ abstract class AppRoutes {
   static const navbar = '/navbar';
   static const navigation = '/navigation';
   static const scanner = '/scanner';
+  static const leave = '/leave';
 }

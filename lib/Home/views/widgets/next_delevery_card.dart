@@ -1,6 +1,5 @@
 import 'package:axa_driver/Home/model/home_model.dart';
 import 'package:axa_driver/Home/views/home_view.dart';
-import 'package:axa_driver/Home/views/widgets/order_image.dart';
 import 'package:axa_driver/core/services/app_layout.dart';
 import 'package:axa_driver/core/theme/app_icons.dart';
 import 'package:axa_driver/core/theme/apptheme.dart';
@@ -9,19 +8,30 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class NextDeliveryCard extends StatelessWidget {
-  const NextDeliveryCard({super.key, required this.order, required this.layout});
+  const NextDeliveryCard({
+    super.key,
+    required this.order,
+    required this.layout,
+  });
 
   final OrderModel order;
   final AppLayout layout;
 
   @override
   Widget build(BuildContext context) {
-    final imgSize = layout.productImageSm;
-    final rowGap = layout.innerGapSm;
+    // Circle image — same size as Figma (~65px)
+    final double imgSize = layout.productImageSm;
+    const double iconSize = 14.0;
     final String? imageUrl = firstImageUrl(order);
 
+    final List<String> itemLines = [
+      ...order.waterCans.map((c) => '${c.quantity} × ${c.name}'),
+      ...order.products.map((p) => '${p.quantity} × ${p.name}'),
+      ...order.addons.map((a) => '${a.quantity} × ${a.name}'),
+    ];
+
     return Container(
-      padding: EdgeInsets.all(layout.hPad * 0.7),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppDimens.cardRadius),
@@ -30,62 +40,89 @@ class NextDeliveryCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Product image
-          OrderImage(size: imgSize, imageUrl: imageUrl),
+          // ── Circle image ───────────────────────────────────────────────
+          _CircleImage(size: imgSize, imageUrl: imageUrl),
 
-          SizedBox(width: layout.hPad * 0.5),
+          const SizedBox(width: 12),
 
+          // ── Info + button — Expanded prevents any overflow ─────────────
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Customer name
+                // Customer name — blue, bold
                 InfoRow(
                   icon: AppIcons.profile,
-                  text: order.customerName,
+                  text: order.customerName.isNotEmpty
+                      ? order.customerName
+                      : '—',
                   isTitle: true,
-                  iconSize: layout.iconSm,
+                  iconSize: iconSize,
                 ),
-                SizedBox(height: rowGap),
+                const SizedBox(height: 4),
 
                 // Address
                 InfoRow(
                   icon: AppIcons.map,
-                  text: order.address,
-                  iconSize: layout.iconSm,
+                  text: order.address.isNotEmpty ? order.address : '—',
+                  iconSize: iconSize,
                 ),
-                SizedBox(height: rowGap),
+                const SizedBox(height: 4),
 
-                // Water cans summary (compact — only cans for list card)
-                if (order.waterCans.isNotEmpty)
+                // Item lines
+                if (itemLines.isEmpty)
                   InfoRow(
                     icon: AppIcons.bag,
-                    text: order.waterCanSummary,
-                    iconSize: layout.iconSm,
+                    text: '0 × items',
+                    iconSize: iconSize,
+                  )
+                else
+                  ...itemLines.map(
+                    (line) => Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: InfoRow(
+                        icon: AppIcons.bag,
+                        text: line,
+                        iconSize: iconSize,
+                      ),
+                    ),
                   ),
 
-                SizedBox(height: layout.innerGapMd),
+                const SizedBox(height: 8),
 
+                // ── Pill button — NOT full width, auto-sized ─────────────
                 SizedBox(
-                  width: double.infinity,
-                  height: layout.buttonHeightSm,
+                  height: 34,
                   child: ElevatedButton(
                     onPressed: () {
-                      debugPrint('Navigating with lat: ${order.latitude}, lng: ${order.longitude}');
-                      debugPrint('Parsed lat: ${double.tryParse(order.latitude)}, lng: ${double.tryParse(order.longitude)}');
-
                       Get.toNamed(
                         AppRoutes.navigation,
                         arguments: {
                           'orderId': order.id,
-                          'destLat': double.tryParse(order.latitude) ?? 0.0,
-                          'destLng': double.tryParse(order.longitude) ?? 0.0,
+                          'destLat':
+                              double.tryParse(order.latitude) ?? 0.0,
+                          'destLng':
+                              double.tryParse(order.longitude) ?? 0.0,
                         },
                       );
                     },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.white,
+                      elevation: 0,
+                      // Pill shape — fully rounded
+                      shape: const StadiumBorder(),
+                      // Auto width based on content
+                      minimumSize: const Size(0, 34),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                    ),
                     child: Text(
                       'Start Navigation',
-                      style: AppTextStyles.buttonSmall,
+                      style: AppTextStyles.buttonSmall.copyWith(
+                        fontSize: 12,
+                        color: AppColors.white,
+                      ),
                     ),
                   ),
                 ),
@@ -96,4 +133,40 @@ class NextDeliveryCard extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Perfect circle image ──────────────────────────────────────────────────────
+class _CircleImage extends StatelessWidget {
+  const _CircleImage({required this.size, this.imageUrl});
+
+  final double size;
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipOval(
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: imageUrl != null && imageUrl!.isNotEmpty
+            ? Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _placeholder(),
+              )
+            : _placeholder(),
+      ),
+    );
+  }
+
+  Widget _placeholder() => Container(
+        color: AppColors.primarySurface,
+        child: Center(
+          child: Icon(
+            Icons.water_drop_rounded,
+            color: AppColors.primary,
+            size: size * 0.45,
+          ),
+        ),
+      );
 }

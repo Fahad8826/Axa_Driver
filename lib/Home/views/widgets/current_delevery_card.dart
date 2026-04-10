@@ -1,6 +1,5 @@
 import 'package:axa_driver/Home/model/home_model.dart';
 import 'package:axa_driver/Home/views/home_view.dart';
-import 'package:axa_driver/Home/views/widgets/order_image.dart';
 import 'package:axa_driver/core/services/app_layout.dart';
 import 'package:axa_driver/core/theme/app_icons.dart';
 import 'package:axa_driver/core/theme/apptheme.dart';
@@ -11,17 +10,20 @@ import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class CurrentDeliveryCard extends StatelessWidget {
-  const CurrentDeliveryCard({super.key, required this.order, required this.layout});
+  const CurrentDeliveryCard({
+    super.key,
+    required this.order,
+    required this.layout,
+  });
 
   final OrderModel order;
   final AppLayout layout;
 
   @override
   Widget build(BuildContext context) {
-    final imgSize = layout.productImageLg;
-    final rowGap = layout.innerGapSm;
+    final double imgSize = layout.productImageLg;
+    const double iconSize = 14.0;
 
-    // All item lines: water cans → products → addons
     final List<String> itemLines = [
       ...order.waterCans.map((c) => '${c.quantity} × ${c.name}'),
       ...order.products.map((p) => '${p.quantity} × ${p.name}'),
@@ -31,7 +33,7 @@ class CurrentDeliveryCard extends StatelessWidget {
     final String? imageUrl = firstImageUrl(order);
 
     return Container(
-      padding: EdgeInsets.all(layout.hPad * 0.7),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppDimens.cardRadius),
@@ -40,105 +42,124 @@ class CurrentDeliveryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Top row: circle image + info ─────────────────────────────────
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Product image — rounded rectangle, real image or placeholder
-              OrderImage(size: imgSize, imageUrl: imageUrl),
+              // Circle image — matches Figma
+              _CircleImage(size: imgSize, imageUrl: imageUrl),
 
-              SizedBox(width: layout.hPad * 0.5),
+              const SizedBox(width: 12),
 
-              // Order details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Customer name
                     InfoRow(
                       icon: AppIcons.profile,
-                      text: order.customerName,
+                      text: order.customerName.isNotEmpty
+                          ? order.customerName
+                          : '—',
                       isTitle: true,
-                      iconSize: layout.iconSm,
+                      iconSize: iconSize,
                     ),
-                    SizedBox(height: rowGap),
-
-                    // Address
+                    const SizedBox(height: 4),
                     InfoRow(
                       icon: AppIcons.map,
-                      text: order.address,
-                      iconSize: layout.iconSm,
+                      text: order.address.isNotEmpty ? order.address : '—',
+                      iconSize: iconSize,
                     ),
-
-                    // Each item on its own row (matches Figma)
-                    ...itemLines.map(
-                      (line) => Padding(
-                        padding: EdgeInsets.only(top: rowGap),
+                    if (itemLines.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
                         child: InfoRow(
                           icon: AppIcons.bag,
-                          text: line,
-                          iconSize: layout.iconSm,
+                          text: '0 × items',
+                          iconSize: iconSize,
+                        ),
+                      )
+                    else
+                      ...itemLines.map(
+                        (line) => Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: InfoRow(
+                            icon: AppIcons.bag,
+                            text: line,
+                            iconSize: iconSize,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
             ],
           ),
 
-          SizedBox(height: layout.innerGapMd),
-          const Divider(height: 1, color: AppColors.divider),
-          SizedBox(height: layout.innerGapMd),
+          const SizedBox(height: 12),
 
-          // Action buttons
+          // ── Two pill buttons side by side ─────────────────────────────────
           Row(
             children: [
+              // Start Navigation — filled blue pill, Expanded
               Expanded(
                 child: SizedBox(
-                  height: layout.buttonHeightSm,
+                  height: 38,
                   child: ElevatedButton(
                     onPressed: () {
                       Get.toNamed(
                         AppRoutes.navigation,
                         arguments: {
                           'orderId': order.id,
-                          'destLat': double.tryParse(order.latitude) ?? 0.0,
-                          'destLng': double.tryParse(order.longitude) ?? 0.0,
+                          'destLat':
+                              double.tryParse(order.latitude) ?? 0.0,
+                          'destLng':
+                              double.tryParse(order.longitude) ?? 0.0,
                         },
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.white,
+                      elevation: 0,
+                      // Pill shape
+                      shape: const StadiumBorder(),
+                      padding: EdgeInsets.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SvgPicture.asset(
-                            AppIcons.map,
-                            width: layout.iconSm,
-                            height: layout.iconSm,
-                            colorFilter: const ColorFilter.mode(
-                              AppColors.white,
-                              BlendMode.srcIn,
-                            ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SvgPicture.asset(
+                          AppIcons.map,
+                          width: 14,
+                          height: 14,
+                          colorFilter: const ColorFilter.mode(
+                            AppColors.white,
+                            BlendMode.srcIn,
                           ),
-                          const SizedBox(width: 6),
-                          Text(
+                        ),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
                             'Start Navigation',
-                            style: AppTextStyles.buttonSmall,
+                            style: AppTextStyles.buttonSmall
+                                .copyWith(fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
-              SizedBox(width: layout.hPad * 0.4),
+
+              const SizedBox(width: 8),
+
+              // Call Customer — outlined blue pill, Expanded
               Expanded(
                 child: SizedBox(
-                  height: layout.buttonHeightSm,
+                  height: 38,
                   child: OutlinedButton(
                     onPressed: () async {
                       final url = Uri.parse('tel:${order.phoneNumber}');
@@ -147,31 +168,41 @@ class CurrentDeliveryCard extends StatelessWidget {
                       }
                     },
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(
+                        color: AppColors.primary,
+                        width: 1.5,
+                      ),
+                      // Pill shape
+                      shape: const StadiumBorder(),
+                      padding: EdgeInsets.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SvgPicture.asset(
-                            AppIcons.phone,
-                            width: layout.iconSm,
-                            height: layout.iconSm,
-                            colorFilter: const ColorFilter.mode(
-                              AppColors.primary,
-                              BlendMode.srcIn,
-                            ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SvgPicture.asset(
+                          AppIcons.phone,
+                          width: 14,
+                          height: 14,
+                          colorFilter: const ColorFilter.mode(
+                            AppColors.primary,
+                            BlendMode.srcIn,
                           ),
-                          const SizedBox(width: 6),
-                          Text(
+                        ),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
                             'Call Customer',
                             style: AppTextStyles.buttonSmall.copyWith(
                               color: AppColors.primary,
+                              fontSize: 12,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -182,4 +213,40 @@ class CurrentDeliveryCard extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Circle image ──────────────────────────────────────────────────────────────
+class _CircleImage extends StatelessWidget {
+  const _CircleImage({required this.size, this.imageUrl});
+
+  final double size;
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipOval(
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: imageUrl != null && imageUrl!.isNotEmpty
+            ? Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _placeholder(),
+              )
+            : _placeholder(),
+      ),
+    );
+  }
+
+  Widget _placeholder() => Container(
+        color: AppColors.primarySurface,
+        child: Center(
+          child: Icon(
+            Icons.water_drop_rounded,
+            color: AppColors.primary,
+            size: size * 0.45,
+          ),
+        ),
+      );
 }

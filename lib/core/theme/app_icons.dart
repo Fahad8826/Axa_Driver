@@ -7,5 +7,6 @@ class AppIcons {
   static const phone = "assets/svgs/phone.svg";
   static const bag = "assets/svgs/bag.svg";
   static const map = "assets/svgs/map-pinned.svg";
+  static const search = "assets/svgs/search.svg";
  
 }

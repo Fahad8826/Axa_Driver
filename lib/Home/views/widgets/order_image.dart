@@ -1,4 +1,4 @@
-// Order image — network image with fallback placeholder.
+// Order image — network image with fallback placeholder, shown in a circle.
 import 'package:axa_driver/core/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 
@@ -10,8 +10,7 @@ class OrderImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppDimens.cardRadiusSmall),
+    return ClipOval(
       child: SizedBox(
         width: size,
         height: size,

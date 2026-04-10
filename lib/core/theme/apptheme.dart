@@ -34,6 +34,9 @@ class AppColors {
   static const Color statusAssigned        = Color(0xFF1565C0);
   static const Color statusAssignedSurface = Color(0xFFE3F2FD);
   static const Color statusCancelled       = Color(0xFFC62828);
+  static const Color statusApproved        = Color(0xFF2E7D32);
+  static const Color statusRejected        = Color(0xFFC62828);
+  static const Color statusProcessing         = Color(0xFFF57C00);
   static const Color statusCancelledSurface = Color(0xFFFFEBEE);
 }
 
