@@ -15,10 +15,10 @@ class LeaveListView extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        centerTitle: true,
         title: Text('Leaves', style: AppTextStyles.headingMedium),
         backgroundColor: AppColors.white,
         elevation: 0,
-        centerTitle: false,
         actions: [
           Obx(
             () => DropdownButtonHideUnderline(

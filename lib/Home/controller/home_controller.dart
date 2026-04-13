@@ -16,6 +16,9 @@ class HomeController extends GetxController {
   final Rx<OrderModel?> nearestOrder = Rx(null);
   final nearestOrderMessage = 'No active delivery right now'.obs;
   final RxList<OrderModel> todayOrders = <OrderModel>[].obs;
+  String? _nextUrl;
+  bool get hasMoreOrders => _nextUrl != null;
+  final isLoadingMore = false.obs;
 
   @override
   void onInit() {
@@ -69,18 +72,40 @@ class HomeController extends GetxController {
         nearestOrderMessage.value = 'No active delivery right now';
       }
 
-      // 3. Today's orders
-      if (ordersResponse.data != null && ordersResponse.data is List) {
-        todayOrders.value = (ordersResponse.data as List)
+      // 3. Today's orders (paginated response)
+      if (ordersResponse.data != null && ordersResponse.data is Map<String, dynamic>) {
+        final data = ordersResponse.data as Map<String, dynamic>;
+        _nextUrl = data['next'] as String?;
+        final results = data['results'] as List<dynamic>? ?? [];
+        todayOrders.value = results
             .map((e) => OrderModel.fromJson(e as Map<String, dynamic>))
             .toList();
       } else {
         todayOrders.clear();
+        _nextUrl = null;
       }
     } catch (e) {
       error(e.toString());
     } finally {
       isLoading(false);
+    }
+  }
+
+  Future<void> loadMoreOrders() async {
+    if (_nextUrl == null || isLoadingMore.value) return;
+
+    try {
+      isLoadingMore(true);
+      final response = await _dio.getUri(Uri.parse(_nextUrl!));
+      final data = response.data as Map<String, dynamic>;
+      _nextUrl = data['next'] as String?;
+
+      final results = data['results'] as List<dynamic>? ?? [];
+      todayOrders.addAll(results.map((e) => OrderModel.fromJson(e as Map<String, dynamic>)));
+    } catch (e) {
+      debugPrint('Load more orders error: $e');
+    } finally {
+      isLoadingMore(false);
     }
   }
 

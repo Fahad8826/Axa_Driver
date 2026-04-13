@@ -3,6 +3,8 @@ class OrdersModel {
   final String status;
   final String customerName;
   final String customerAddress;
+  final String? latitude;
+  final String? longitude;
   final List<OrderCanItem> waterCans;
   final List<OrderProductItem> products;
   final List<OrderAddonItem> addons;
@@ -14,6 +16,8 @@ class OrdersModel {
     required this.status,
     required this.customerName,
     required this.customerAddress,
+    this.latitude,
+    this.longitude,
     required this.waterCans,
     required this.products,
     required this.addons,
@@ -26,6 +30,8 @@ class OrdersModel {
         status: json['status'] ?? '',
         customerName: json['customer_name'] ?? '',
         customerAddress: json['customer_address'] ?? '',
+        latitude: json['latitude'] as String?,
+        longitude: json['longitude'] as String?,
         waterCans: (json['water_cans'] as List<dynamic>? ?? [])
             .map((e) => OrderCanItem.fromJson(e as Map<String, dynamic>))
             .toList(),

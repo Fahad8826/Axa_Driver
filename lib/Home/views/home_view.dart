@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 
-import '../../../core/services/app_layout.dart';
+import '../../core/theme/utils/app_layout.dart';
 import '../../../core/theme/apptheme.dart';
 
 
@@ -128,6 +128,21 @@ class HomeView extends StatelessWidget {
                         delegate: SliverChildBuilderDelegate((context, index) {
                           final isLast =
                               index == controller.todayOrders.length - 1;
+                          if (isLast && controller.hasMoreOrders) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              controller.loadMoreOrders();
+                            });
+                          }
+                          if (index == controller.todayOrders.length) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            );
+                          }
                           return Padding(
                             padding: EdgeInsets.fromLTRB(
                               layout.hPad,
@@ -140,7 +155,8 @@ class HomeView extends StatelessWidget {
                               layout: layout,
                             ),
                           );
-                        }, childCount: controller.todayOrders.length),
+                        }, childCount: controller.todayOrders.length +
+                            (controller.hasMoreOrders ? 1 : 0)),
                       ),
               ],
             ),

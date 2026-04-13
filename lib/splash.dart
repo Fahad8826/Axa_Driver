@@ -84,7 +84,14 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
     }
 
     if (isLoggedIn) {
-      await startLocationService();
+      // Start location service after navigation to prevent isolate conflicts
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        try {
+          await startLocationService();
+        } catch (e) {
+          print('[Splash] Location service start failed: $e');
+        }
+      });
       Get.offAllNamed(AppRoutes.navbar);
     } else if (onboardingDone) {
       Get.offAllNamed(AppRoutes.login);

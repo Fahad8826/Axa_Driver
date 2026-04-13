@@ -24,6 +24,9 @@ const int _intervalSeconds = 30;
 const String _channelId = 'axa_location_channel';
 const int _notifId = 999;
 
+// Prevent concurrent service starts
+bool _isStartingService = false;
+
 // ────────────────────────────────────────────────
 // INIT — call once in main.dart BEFORE runApp
 // ────────────────────────────────────────────────
@@ -44,22 +47,27 @@ Future<void> initLocationService() async {
 
   // 2. Configure background service
   final service = FlutterBackgroundService();
-  await service.configure(
-    androidConfiguration: AndroidConfiguration(
-      onStart: onServiceStart, // ← top-level function, @pragma annotated
-      autoStart: false,
-      isForegroundMode: true,
-      notificationChannelId: _channelId,
-      initialNotificationTitle: 'AXA Driver',
-      initialNotificationContent: 'Preparing location tracking...',
-      foregroundServiceNotificationId: _notifId,
-    ),
-    iosConfiguration: IosConfiguration(
-      autoStart: false,
-      onForeground: onServiceStart,
-      onBackground: onIosBackground,
-    ),
-  );
+  try {
+    await service.configure(
+      androidConfiguration: AndroidConfiguration(
+        onStart: onServiceStart, // ← top-level function, @pragma annotated
+        autoStart: false, // Never auto-start to prevent crashes
+        isForegroundMode: true,
+        notificationChannelId: _channelId,
+        initialNotificationTitle: 'AXA Driver',
+        initialNotificationContent: 'Preparing location tracking...',
+        foregroundServiceNotificationId: _notifId,
+      ),
+      iosConfiguration: IosConfiguration(
+        autoStart: false, // Never auto-start to prevent crashes
+        onForeground: onServiceStart,
+        onBackground: onIosBackground,
+      ),
+    );
+  } catch (e) {
+    print('[LocationService] ❌ Service configuration failed: $e');
+    // Don't throw, just log - app can still work without background service
+  }
 
   print('[LocationService] ✅ initLocationService done');
 }
@@ -78,23 +86,24 @@ Future<bool> onIosBackground(ServiceInstance service) async {
 // BACKGROUND ISOLATE — top-level + @pragma
 // ────────────────────────────────────────────────
 @pragma('vm:entry-point')
-void onServiceStart(ServiceInstance service) async {
-  WidgetsFlutterBinding.ensureInitialized();
-  DartPluginRegistrant.ensureInitialized();
+Future<void> onServiceStart(ServiceInstance service) async {
+  try {
+    // WidgetsFlutterBinding.ensureInitialized();
+    DartPluginRegistrant.ensureInitialized();
 
-  // ✅ Load environment variables
-  await dotenv.load(fileName: ".env");
+    // ✅ Load environment variables
+    await dotenv.load(fileName: ".env");
 
-  print('[LocationService] 🚀 onServiceStart called');
+    print('[LocationService] 🚀 onServiceStart called');
 
-  // ── Android foreground setup ──────────────
-  if (service is AndroidServiceInstance) {
-    service.on('setAsForeground').listen((_) => service.setAsForegroundService());
-    service.on('setAsBackground').listen((_) => service.setAsBackgroundService());
+    // ── Android foreground setup ──────────────
+    if (service is AndroidServiceInstance) {
+      service.on('setAsForeground').listen((_) => service.setAsForegroundService());
+      service.on('setAsBackground').listen((_) => service.setAsBackgroundService());
 
-    await service.setAsForegroundService();
-    print('[LocationService] ✅ Set as foreground service');
-  }
+      await service.setAsForegroundService();
+      print('[LocationService] ✅ Set as foreground service');
+    }
 
   // ── Stop signal ──────────────
   service.on('stopService').listen((_) async {
@@ -106,15 +115,21 @@ void onServiceStart(ServiceInstance service) async {
 
   // ── Read token ──────────────
   print('[LocationService] 🔑 Reading token...');
-  const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
-
   String? token;
   try {
+    const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
     token = await storage.read(key: 'access_token');
   } catch (e) {
     print('[LocationService] ❌ Token read error: $e');
-    await service.stopSelf();
-    return;
+    print('[LocationService] 🔄 Retrying with basic options...');
+    try {
+      const storage = FlutterSecureStorage();
+      token = await storage.read(key: 'access_token');
+    } catch (e2) {
+      print('[LocationService] ❌ Token read failed completely: $e2');
+      await service.stopSelf();
+      return;
+    }
   }
 
   if (token == null || token.isEmpty) {
@@ -125,8 +140,16 @@ void onServiceStart(ServiceInstance service) async {
   print('[LocationService] ✅ Token OK: ${token.substring(0, 20)}...');
 
   // ── Check GPS permission ──────────────
-  final permission = await Geolocator.checkPermission();
-  print('[LocationService] 📍 GPS permission: $permission');
+  LocationPermission permission;
+  try {
+    permission = await Geolocator.checkPermission();
+    print('[LocationService] 📍 GPS permission: $permission');
+  } catch (e) {
+    print('[LocationService] ❌ GPS check failed: $e');
+    await service.stopSelf();
+    return;
+  }
+
   if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
     print('[LocationService] ❌ GPS permission denied — stopping');
     await service.stopSelf();
@@ -134,20 +157,40 @@ void onServiceStart(ServiceInstance service) async {
   }
 
   // ── Connect WebSocket ──────────────
-  await _connectWs(token);
+  try {
+    await _connectWs(token);
+  } catch (e) {
+    print('[LocationService] ❌ WS connection failed: $e');
+    // Don't stop service, try to continue with location updates
+  }
 
   // ── Send first location immediately ──────────────
-  await _sendLocation(token, service);
+  try {
+    await _sendLocation(token, service);
+  } catch (e) {
+    print('[LocationService] ❌ Initial location send failed: $e');
+  }
 
   // ── Then every 30 seconds ──────────────
   int tick = 0;
   Timer.periodic(const Duration(seconds: _intervalSeconds), (_) async {
-    tick++;
-    print('[LocationService] ⏱️ Tick #$tick');
-    await _sendLocation(token!, service);
+    try {
+      tick++;
+      print('[LocationService] ⏱️ Tick #$tick');
+      await _sendLocation(token!, service); // token is guaranteed non-null here
+    } catch (e) {
+      print('[LocationService] ❌ Periodic location error: $e');
+      // Continue the timer even if one location update fails
+    }
   });
 
-  print('[LocationService] ✅ Timer started — every ${_intervalSeconds}s');
+    print('[LocationService] ✅ Timer started — every ${_intervalSeconds}s');
+
+  } catch (e, stackTrace) {
+    print('[LocationService] ❌ CRITICAL ERROR in background service: $e');
+    print('[LocationService] Stack trace: $stackTrace');
+    await service.stopSelf();
+  }
 }
 
 // ────────────────────────────────────────────────
@@ -165,7 +208,9 @@ Future<void> _connectWs(String token) async {
     final uri = Uri.parse('$_wsBase?token=$token');
     print('[LocationService] 🔌 Connecting to: $uri');
     final channel = WebSocketChannel.connect(uri);
-    await channel.ready;
+
+    // Add timeout to WebSocket connection
+    await channel.ready.timeout(const Duration(seconds: 10));
     print('[LocationService] ✅ WS channel connected');
 
     _wsChannel = channel;
@@ -178,11 +223,19 @@ Future<void> _connectWs(String token) async {
       onDone: () async {
         print('[LocationService] ⚠️ WS closed — reconnecting in 3s...');
         _wsChannel = null;
+        // Only reconnect if token is still valid
         await Future.delayed(const Duration(seconds: 3));
-        await _connectWs(token);
+        try {
+          await _connectWs(token);
+        } catch (e) {
+          print('[LocationService] ❌ WS reconnection failed: $e');
+        }
       },
       cancelOnError: false,
     );
+  } on TimeoutException {
+    print('[LocationService] ❌ WS connection timeout');
+    _wsChannel = null;
   } catch (e) {
     print('[LocationService] ❌ WS connect failed: $e');
     _wsChannel = null;
@@ -201,9 +254,14 @@ Future<void> _sendLocation(String token, ServiceInstance service) async {
 
     print('[LocationService] ✅ Got: ${pos.latitude}, ${pos.longitude}');
 
+    // Try to reconnect WebSocket if needed
     if (_wsChannel == null) {
       print('[LocationService] ⚠️ WS null — reconnecting...');
-      await _connectWs(token);
+      try {
+        await _connectWs(token);
+      } catch (e) {
+        print('[LocationService] ❌ WS reconnection failed, continuing without WS: $e');
+      }
     }
 
     final payload = jsonEncode({
@@ -211,18 +269,26 @@ Future<void> _sendLocation(String token, ServiceInstance service) async {
       'longitude': pos.longitude.toString(),
     });
 
-    _wsChannel?.sink.add(payload);
-    print('[LocationService] ✅ SENT: $payload');
+    try {
+      _wsChannel?.sink.add(payload);
+      print('[LocationService] ✅ SENT: $payload');
+    } catch (e) {
+      print('[LocationService] ❌ WS send failed: $e');
+    }
 
     if (service is AndroidServiceInstance) {
-      service.setForegroundNotificationInfo(
-        title: 'AXA Driver — Live',
-        content:
-            '${pos.latitude.toStringAsFixed(5)}, ${pos.longitude.toStringAsFixed(5)}',
-      );
+      try {
+        service.setForegroundNotificationInfo(
+          title: 'AXA Driver — Live',
+          content:
+              '${pos.latitude.toStringAsFixed(5)}, ${pos.longitude.toStringAsFixed(5)}',
+        );
+      } catch (e) {
+        print('[LocationService] ❌ Notification update failed: $e');
+      }
     }
   } on TimeoutException {
-    print('[LocationService] ❌ GPS timeout');
+    print('[LocationService] ❌ GPS timeout - location unavailable');
   } catch (e) {
     print('[LocationService] ❌ sendLocation error: $e');
   }
@@ -234,28 +300,56 @@ Future<void> _sendLocation(String token, ServiceInstance service) async {
 Future<void> startLocationService() async {
   print('[LocationService] 🚀 startLocationService called');
 
-  LocationPermission perm = await Geolocator.checkPermission();
-  if (perm == LocationPermission.denied) {
-    perm = await Geolocator.requestPermission();
-    if (perm == LocationPermission.denied) {
-      print('[LocationService] ❌ Permission denied');
-      return;
-    }
-  }
-  if (perm == LocationPermission.deniedForever) {
-    print('[LocationService] ❌ Permission permanently denied');
+  // Prevent concurrent starts
+  if (_isStartingService) {
+    print('[LocationService] ⚠️ Service start already in progress');
     return;
   }
 
-  final service = FlutterBackgroundService();
-  final isRunning = await service.isRunning();
-  print('[LocationService] Is already running: $isRunning');
+  _isStartingService = true;
 
-  if (!isRunning) {
-    await service.startService();
-    print('[LocationService] ✅ Service start requested');
-  } else {
-    print('[LocationService] ⚠️ Service already running');
+  try {
+    // Ensure we're on the main isolate
+    if (!WidgetsBinding.instance.isRootWidgetAttached) {
+      print('[LocationService] ❌ Not on main isolate, delaying...');
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (!WidgetsBinding.instance.isRootWidgetAttached) {
+        print('[LocationService] ❌ Still not on main isolate, aborting');
+        _isStartingService = false;
+        return;
+      }
+    }
+
+    LocationPermission perm = await Geolocator.checkPermission();
+    if (perm == LocationPermission.denied) {
+      perm = await Geolocator.requestPermission();
+      if (perm == LocationPermission.denied) {
+        print('[LocationService] ❌ Permission denied');
+        _isStartingService = false;
+        return;
+      }
+    }
+    if (perm == LocationPermission.deniedForever) {
+      print('[LocationService] ❌ Permission permanently denied');
+      _isStartingService = false;
+      return;
+    }
+
+    final service = FlutterBackgroundService();
+    final isRunning = await service.isRunning();
+    print('[LocationService] Is already running: $isRunning');
+
+    if (!isRunning) {
+      await service.startService();
+      print('[LocationService] ✅ Service start requested');
+    } else {
+      print('[LocationService] ⚠️ Service already running');
+    }
+  } catch (e) {
+    print('[LocationService] ❌ Service start failed: $e');
+    print('[LocationService] This might be an isolate issue - service will retry later');
+  } finally {
+    _isStartingService = false;
   }
 }
 

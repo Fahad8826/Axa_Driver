@@ -8,7 +8,7 @@ class AppFeedback {
 
   static void success(String message) {
     _show(
-      label: 'SUCCESS',
+      label: 'Done',
       message: message,
       accentColor: const Color(0xFF22C55E),
       icon: Icons.check_rounded,
@@ -17,7 +17,7 @@ class AppFeedback {
 
   static void error(String message) {
     _show(
-      label: 'ERROR',
+      label: 'Oops',
       message: message,
       accentColor: const Color(0xFFEF4444),
       icon: Icons.error_outline_rounded,
@@ -26,16 +26,25 @@ class AppFeedback {
 
   static void warning(String message) {
     _show(
-      label: 'WARNING',
+      label: 'Heads up',
       message: message,
       accentColor: const Color(0xFFF59E0B),
-      icon: Icons.warning_amber_rounded,
+      icon: Icons.info_outline_rounded,
+    );
+  }
+
+  static void info(String message) {
+    _show(
+      label: 'Note',
+      message: message,
+      accentColor: const Color(0xFF3B82F6),
+      icon: Icons.lightbulb_outline_rounded,
     );
   }
 
   static void fromError(AppError error) {
     _show(
-      label: 'ERROR',
+      label: 'Oops',
       message: error.message,
       accentColor: const Color(0xFFEF4444),
       icon: Icons.error_outline_rounded,
@@ -48,7 +57,6 @@ class AppFeedback {
     required Color accentColor,
     required IconData icon,
   }) {
-    // Dismiss any existing snackbar cleanly before showing a new one
     if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
 
     Get.rawSnackbar(

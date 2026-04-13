@@ -1,5 +1,5 @@
 
-import 'package:axa_driver/core/services/app_layout.dart';
+import 'package:axa_driver/core/theme/utils/app_layout.dart';
 import 'package:axa_driver/core/theme/app_icons.dart';
 import 'package:axa_driver/core/theme/apptheme.dart';
 import 'package:axa_driver/orders/controller/orders_controller.dart';
@@ -82,6 +82,13 @@ class OrdersView extends StatelessWidget {
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(30),
                           borderSide: const BorderSide(
+                            color: AppColors.primary,
+                            width: 1.5,
+                          ),
+                        ),
+                        disabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide(
                             color: AppColors.primary,
                             width: 1.5,
                           ),

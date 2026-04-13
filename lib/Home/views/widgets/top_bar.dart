@@ -1,5 +1,6 @@
 import 'package:axa_driver/core/theme/app_icons.dart';
 import 'package:axa_driver/core/theme/apptheme.dart';
+import 'package:axa_driver/core/theme/utils/appfeedback.dart';
 import 'package:axa_driver/profile/controller/profile_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -63,7 +64,7 @@ class TopBar extends StatelessWidget {
           // Notification bell
           GestureDetector(
             onTap: () {
-              // TODO: navigate to notifications
+              AppFeedback.warning('Notifications coming soon!');
             },
             child: Container(
               width: 40,

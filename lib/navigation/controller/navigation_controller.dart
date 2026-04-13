@@ -8,7 +8,7 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-
+import 'package:axa_driver/core/services/location_service.dart';
 class NavigationController extends GetxController {
   final Dio _dio = DioClient.dio;
 
@@ -46,7 +46,16 @@ class NavigationController extends GetxController {
     destLat = (args['destLat'] as num).toDouble();
     destLng = (args['destLng'] as num).toDouble();
     _init();
+
+    Future.delayed(const Duration(seconds: 2), () async {
+      try {
+        await startLocationService();
+      } catch (e) {
+        print('[Navbar] Location service start failed: $e');
+      }
+    });
   }
+  
 
   Future<void> _init() async {
     // Run location fetch and order fetch concurrently to reduce wait time
@@ -222,20 +231,19 @@ class NavigationController extends GetxController {
 
   // ── Straight-line fallback polyline ───────────────────────────────────────
   void _buildFallbackPolyline(LatLng origin) {
-    polylines.assignAll({
-      Polyline(
-        polylineId: const PolylineId('route'),
-        color: const Color(0xFF1976D2),
-        width: 4,
-        patterns: [
-          // Dashed to signal it's not a real road route
-          PatternItem.dash(12),
-          PatternItem.gap(6),
-        ],
-        points: [origin, LatLng(destLat, destLng)],
-      ),
-    });
-  }
+  polylines.assignAll({
+    Polyline(
+      polylineId: const PolylineId('route'),
+      color: const Color(0xFF1976D2),
+      width: 5,
+      patterns: [
+        PatternItem.dash(20),   // longer dash
+        PatternItem.gap(10),    // clear gap
+      ],
+      points: [origin, LatLng(destLat, destLng)],
+    ),
+  });
+}
 
   void onMapCreated(GoogleMapController controller) {
     // If the widget was already disposed before the map finished creating,

@@ -14,6 +14,7 @@ import 'package:get/get.dart';
 
 import '../../scanner/controller/scanner_controller.dart';
 import '../../scanner/view/scanner_view.dart';
+import '../../scanner/view/verification_screen.dart';
 import 'package:axa_driver/leave/controller/leave_controller.dart';
 import 'package:axa_driver/leave/view/leave_list_view.dart';
 
@@ -33,6 +34,7 @@ class AppPages {
         Get.lazyPut<ProfileController>(() => ProfileController(), fenix: true);
         Get.lazyPut<HomeController>(() => HomeController(), fenix: true);
         Get.lazyPut<OrdersController>(() => OrdersController(), fenix: true);
+        Get.lazyPut<LeaveController>(() => LeaveController(), fenix: true);
       }),
     ),
     GetPage(name: AppRoutes.splash, page: () => const SplashView()),
@@ -68,6 +70,11 @@ class AppPages {
       }),
     ),
     GetPage(
+      name: AppRoutes.deliveryVerified,
+      page: () => const DeliveryVerifiedView(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
       name: AppRoutes.leave,
       page: () => const LeaveListView(),
       binding: BindingsBuilder(() {
@@ -86,5 +93,6 @@ abstract class AppRoutes {
   static const navbar = '/navbar';
   static const navigation = '/navigation';
   static const scanner = '/scanner';
+  static const deliveryVerified = '/delivery-verified';
   static const leave = '/leave';
 }

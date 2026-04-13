@@ -1,6 +1,6 @@
 import 'package:axa_driver/Home/model/home_model.dart';
 import 'package:axa_driver/Home/views/home_view.dart';
-import 'package:axa_driver/core/services/app_layout.dart';
+import 'package:axa_driver/core/theme/utils/app_layout.dart';
 import 'package:axa_driver/core/theme/app_icons.dart';
 import 'package:axa_driver/core/theme/apptheme.dart';
 import 'package:axa_driver/core/services/routers.dart';

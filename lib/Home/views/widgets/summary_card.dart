@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../core/services/app_layout.dart';
+import '../../../core/theme/utils/app_layout.dart';
 import '../../../core/theme/apptheme.dart';
 import '../../model/home_model.dart';
 

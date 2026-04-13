@@ -7,7 +7,6 @@ import 'package:axa_driver/profile/view/change_password.dart';
 import 'package:axa_driver/profile/view/edit_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:axa_driver/core/services/routers.dart';
 
 class ProfileView extends GetView<ProfileController> {
   const ProfileView({super.key});
@@ -234,14 +233,7 @@ class ProfileView extends GetView<ProfileController> {
                 _ProfileCard(
                   child: Column(
                     children: [
-                      _SettingsRow(
-                        icon: Icons.calendar_today_outlined,
-                        label: 'Leave Management',
-                        screenHeight: screenHeight,
-                        onTap: () {
-                          Get.toNamed(AppRoutes.leave);
-                        },
-                      ),
+                      
                       const _Divider(),
                       _SettingsRow(
                         icon: Icons.lock_outline_rounded,

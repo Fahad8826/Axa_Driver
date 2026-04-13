@@ -34,17 +34,6 @@ class AppErrorWidget extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 14),
-
-            // Error message
-            // Text(
-            //   message,
-            //   style: AppTextStyles.bodyMedium.copyWith(
-            //     color: AppColors.textSecondary,
-            //   ),
-            //   textAlign: TextAlign.center,
-            // ),
-
             const SizedBox(height: 16),
 
             // Small compact retry button

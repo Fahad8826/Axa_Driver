@@ -1,9 +1,11 @@
+import 'dart:io'; // For Platform check
 import 'package:axa_driver/core/network/dioclient.dart';
 import 'package:axa_driver/core/services/app_pref.dart';
 import 'package:axa_driver/core/theme/apptheme.dart';
-import 'package:dio/dio.dart';
+import 'package:axa_driver/core/theme/utils/appfeedback.dart';
+import 'package:dio/dio.dart' as dio_pkg;
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';                          // ← for EdgeInsets
+import 'package:flutter/material.dart'; // ← for EdgeInsets
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 
@@ -22,9 +24,10 @@ class FcmService {
   FcmService._();
   static final FcmService instance = FcmService._();
 
-  final FirebaseMessaging               _fcm        = FirebaseMessaging.instance;
-  final FlutterLocalNotificationsPlugin _localNotif = FlutterLocalNotificationsPlugin();
-  final Dio                             _dio        = DioClient.dio;
+  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+  final FlutterLocalNotificationsPlugin _localNotif =
+      FlutterLocalNotificationsPlugin();
+  final dio_pkg.Dio _dio = DioClient.dio;
 
   // Android notification channel (required for Android 8+)
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
@@ -41,13 +44,13 @@ class FcmService {
 
     // 2. Request permission (iOS + Android 13+)
     final settings = await _fcm.requestPermission(
-      alert:         true,
-      badge:         true,
-      sound:         true,
-      announcement:  false,
-      carPlay:       false,
+      alert: true,
+      badge: true,
+      sound: true,
+      announcement: false,
+      carPlay: false,
       criticalAlert: false,
-      provisional:   false,
+      provisional: false,
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.denied) {
@@ -82,18 +85,19 @@ class FcmService {
   Future<void> _initLocalNotifications() async {
     await _localNotif
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(_channel);
 
-    const androidInit  = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosInit      = DarwinInitializationSettings();
+    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosInit = DarwinInitializationSettings();
     const initSettings = InitializationSettings(
       android: androidInit,
-      iOS:     iosInit,
+      iOS: iosInit,
     );
 
     await _localNotif.initialize(
-      initSettings, 
+      initSettings,
       onDidReceiveNotificationResponse: (details) {
         _handleNotificationPayload(details.payload);
       },
@@ -110,32 +114,50 @@ class FcmService {
   Future<void> _getAndSendToken() async {
     try {
       final token = await _fcm.getToken();
-      if (token == null) {
-        print('[FCM] Token is null — device may not support FCM');
+      if (token == null || token.isEmpty) {
+        print('[FCM] Token is null or empty — device may not support FCM');
         return;
       }
-      print('[FCM] Token: $token');
+      print(
+        '[FCM] Token obtained (${token.length} chars): ${token.substring(0, 50)}...',
+      );
       await _sendTokenToBackend(token);
     } catch (e) {
       print('[FCM] Failed to get token: $e');
+      print('[FCM] FCM Error details: ${e.toString()}');
     }
   }
 
   // ── SEND TOKEN TO BACKEND ─────────────────────────────────────────────────
   Future<void> _sendTokenToBackend(String token) async {
     try {
+      // Validate token before sending
+      if (token.isEmpty) {
+        print('[FCM] Token is empty, skipping send');
+        return;
+      }
+
+      print('[FCM] Sending token to backend: ${token.substring(0, 50)}...');
+
       final accessToken = await AppPrefs.getAccessToken();
 
       // Not logged in yet — save locally, send after login
       if (accessToken == null || accessToken.isEmpty) {
+        print('[FCM] No access token, saving locally');
         await AppPrefs.saveFcmToken(token);
         return;
       }
 
+      // Use FormData as per working example
+      final formData = dio_pkg.FormData.fromMap({
+        'fcm_token': token,
+        'device_type': Platform.isAndroid ? 'android' : 'ios',
+      });
+
       final response = await _dio.post(
-        '/api/driver/fcm-token/',
-        data: {'fcm_token': token},
-        options: Options(
+        '/api/save-fcm-token/', // Updated endpoint
+        data: formData,
+        options: dio_pkg.Options(
           headers: {'Authorization': 'Bearer $accessToken'},
         ),
       );
@@ -144,8 +166,9 @@ class FcmService {
         print('[FCM] Token sent to backend successfully');
         await AppPrefs.saveFcmToken(token);
       }
-    } on DioException catch (e) {
-      print('[FCM] Failed to send token: ${e.response?.data}');
+    } on dio_pkg.DioException catch (e) {
+      print('[FCM] Failed to send token: ${e.response?.statusCode}');
+      print('[FCM] Response data: ${e.response?.data}');
     } catch (e) {
       print('[FCM] Error sending token: $e');
     }
@@ -155,52 +178,48 @@ class FcmService {
   Future<void> sendSavedTokenAfterLogin() async {
     final savedToken = await AppPrefs.getFcmToken();
     if (savedToken != null && savedToken.isNotEmpty) {
+      print('[FCM] Sending saved token after login');
       await _sendTokenToBackend(savedToken);
     } else {
+      print('[FCM] No saved token, getting new one');
       await _getAndSendToken();
     }
   }
 
   // ── FOREGROUND MESSAGE HANDLER ────────────────────────────────────────────
   void _handleForegroundMessage(RemoteMessage message) {
-  print('[FCM] Foreground message: ${message.notification?.title}');
+    print('[FCM] Foreground message: ${message.notification?.title}');
 
-  final notification = message.notification;
-  if (notification == null) return;
+    final notification = message.notification;
+    if (notification == null) return;
 
-  _localNotif.show(
-  message.messageId?.hashCode ?? 0,   // positional: id
-  notification.title,                  // positional: title
-  notification.body,                   // positional: body
-  NotificationDetails(                 // positional: notificationDetails
-    android: AndroidNotificationDetails(
-      _channel.id,
-      _channel.name,
-      channelDescription: _channel.description,
-      importance: Importance.high,
-      priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
-    ),
-    iOS: const DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    ),
-  ),
-  payload: message.data['route'],     // payload stays named
-);
+    _localNotif.show(
+      message.messageId?.hashCode ?? 0, // positional: id
+      notification.title, // positional: title
+      notification.body, // positional: body
+      NotificationDetails(
+        // positional: notificationDetails
+        android: AndroidNotificationDetails(
+          _channel.id,
+          _channel.name,
+          channelDescription: _channel.description,
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      payload: message.data['route'], // payload stays named
+    );
 
-  Get.snackbar(
-    notification.title ?? 'New Notification',
-    notification.body ?? '',
-    snackPosition: SnackPosition.TOP,
-    backgroundColor: AppColors.primary,
-    colorText: AppColors.white,
-    margin: const EdgeInsets.all(16),
-    borderRadius: 12,
-    duration: const Duration(seconds: 4),
-  );
-}
+
+
+    AppFeedback.info(notification.title ?? 'You have a new notification');
+  }
 
   // ── NOTIFICATION TAP HANDLER ──────────────────────────────────────────────
   void _handleMessageTap(RemoteMessage message) {

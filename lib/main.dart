@@ -10,12 +10,28 @@ import 'package:get/get.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
-    // ── Firebase init ──────────────────────────────────────────────────────────
-  await Firebase.initializeApp();
- 
+
+  // ── Firebase init ──────────────────────────────────────────────────────────
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    print('[Main] Firebase init failed: $e');
+  }
+
   // ── FCM init ───────────────────────────────────────────────────────────────
-  await FcmService.instance.init();
-  await initLocationService();
+  try {
+    await FcmService.instance.init();
+  } catch (e) {
+    print('[Main] FCM init failed: $e');
+  }
+
+  // ── Location service init ──────────────────────────────────────────────────
+  try {
+    await initLocationService();
+  } catch (e) {
+    print('[Main] Location service init failed: $e');
+  }
+
   runApp(const MyApp());
 }
 
