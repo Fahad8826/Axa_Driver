@@ -4,6 +4,8 @@ import 'package:axa_driver/navigation/model/order_detail_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart' as fm;
+import 'package:latlong2/latlong.dart' as latlong;
 
 class NavigationView extends StatelessWidget {
   const NavigationView({super.key});
@@ -15,21 +17,51 @@ class NavigationView extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // ── Full-screen Google Map ─────────────────────────────────────────
+          // ── Full-screen Map ─────────────────────────────────────────
           Obx(
-            () => GoogleMap(
-              initialCameraPosition: CameraPosition(
-                target: LatLng(ctrl.destLat, ctrl.destLng),
-                zoom: 14,
-              ),
-              onMapCreated: ctrl.onMapCreated,
-              markers: ctrl.markers.toSet(),
-              polylines: ctrl.polylines.toSet(),
-              myLocationEnabled: true,
-              myLocationButtonEnabled: false,
-              zoomControlsEnabled: false,
-              mapToolbarEnabled: false,
-            ),
+            () {
+              if (ctrl.mapMode.value == 'google') {
+                return GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: LatLng(ctrl.destLat, ctrl.destLng),
+                    zoom: 14,
+                  ),
+                  onMapCreated: ctrl.onMapCreated,
+                  markers: ctrl.markers.toSet(),
+                  polylines: ctrl.polylines.toSet(),
+                  myLocationEnabled: true,
+                  myLocationButtonEnabled: false,
+                  zoomControlsEnabled: false,
+                  mapToolbarEnabled: false,
+                );
+              } else {
+                // Fallback to Flutter Map
+                return fm.FlutterMap(
+                  options: fm.MapOptions(
+                    initialCenter: latlong.LatLng(ctrl.destLat, ctrl.destLng),
+                    initialZoom: 14.0,
+                  ),
+                  children: [
+                    fm.TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.example.app',
+                    ),
+                    fm.MarkerLayer(
+                      markers: ctrl.markers.map((marker) {
+                        return fm.Marker(
+                          point: latlong.LatLng(marker.position.latitude, marker.position.longitude),
+                          child: Icon(
+                            marker.markerId.value == 'destination' ? Icons.location_on : Icons.my_location,
+                            color: marker.markerId.value == 'destination' ? Colors.red : Colors.blue,
+                            size: 30,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                );
+              }
+            },
           ),
 
           // ── Back button & Recenter ─────────────────────────────────────────
@@ -182,12 +214,16 @@ class _ErrorState extends StatelessWidget {
               'Something went wrong',
               style: AppTextStyles.headingSmall,
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 6),
             Text(
               message,
               style: AppTextStyles.bodyMedium,
               textAlign: TextAlign.center,
+              maxLines: 5,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 20),
             SizedBox(
@@ -277,14 +313,15 @@ class _StatItem extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(label, style: AppTextStyles.bodySmall),
-              Text(
-                value,
-                style: AppTextStyles.labelLarge.copyWith(
-                  height: 1.2,
-                  color: AppColors.textPrimary,
-                ),
-              ),
+        Text(label, style: AppTextStyles.bodySmall, overflow: TextOverflow.ellipsis),
+               Text(
+                 value,
+                 style: AppTextStyles.labelLarge.copyWith(
+                   height: 1.2,
+                   color: AppColors.textPrimary,
+                 ),
+                 overflow: TextOverflow.ellipsis,
+               ),
             ],
           ),
         ],
@@ -678,6 +715,7 @@ class _DetailRow extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   )
                 : AppTextStyles.bodyMedium,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],

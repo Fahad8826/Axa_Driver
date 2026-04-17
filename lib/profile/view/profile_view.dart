@@ -37,9 +37,27 @@ class ProfileView extends GetView<ProfileController> {
 
         // ── Error ────────────────────────────────────────────────────────
         if (controller.error.value.isNotEmpty) {
-          return AppErrorWidget(
-            message: controller.error.value,
-            onRetry: controller.fetchProfile,
+          return Center(
+            child: GestureDetector(
+              onTap: controller.fetchProfile,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.refresh_rounded,
+                    size: 48,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Try again',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           );
         }
 

@@ -38,6 +38,9 @@ class NavigationController extends GetxController {
   final distance = '—'.obs;
   final duration = '—'.obs;
 
+  // ── Map Mode ──────────────────────────────────────────────────────────────
+  final mapMode = 'google'.obs; // 'google' or 'flutter'
+
   @override
   void onInit() {
     super.onInit();
@@ -181,6 +184,7 @@ class NavigationController extends GetxController {
   try {
     final apiKey = dotenv.env['GOOGLE_MAPS_KEY'] ?? '';
     if (apiKey.isEmpty) {
+      mapMode.value = 'flutter';
       _buildFallbackPolyline(origin);
       return;
     }
@@ -201,6 +205,7 @@ class NavigationController extends GetxController {
     debugPrint('API Key used: ${dotenv.env['GOOGLE_MAPS_KEY']}');
 
     if (result.points.isNotEmpty) {
+      mapMode.value = 'google';
       polylines.assignAll({
         Polyline(
           polylineId: const PolylineId('route'),
@@ -221,10 +226,12 @@ class NavigationController extends GetxController {
         duration.value = '${(result.totalDurationValue! / 60).round()} min';
       }
     } else {
+      mapMode.value = 'flutter';
       _buildFallbackPolyline(origin);
     }
   } catch (e) {
     debugPrint('Polyline fetch error: $e');
+    mapMode.value = 'flutter';
     _buildFallbackPolyline(origin);
   }
 }

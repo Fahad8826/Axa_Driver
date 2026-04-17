@@ -1,7 +1,6 @@
 import 'package:axa_driver/Home/controller/home_controller.dart';
 import 'package:axa_driver/Home/model/home_model.dart';
 import 'package:axa_driver/Home/views/widgets/current_delevery_card.dart';
-import 'package:axa_driver/Home/views/widgets/error_view.dart';
 import 'package:axa_driver/Home/views/widgets/next_delevery_card.dart';
 import 'package:axa_driver/Home/views/widgets/summary_card.dart';
 import 'package:axa_driver/Home/views/widgets/top_bar.dart';
@@ -32,9 +31,27 @@ class HomeView extends StatelessWidget {
           }
 
           if (controller.error.value.isNotEmpty) {
-            return ErrorView(
-              message: controller.error.value,
-              onRetry: controller.fetchTodaySummary,
+            return Center(
+              child: GestureDetector(
+                onTap: controller.fetchTodaySummary,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.refresh_rounded,
+                      size: 48,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Try again',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             );
           }
 

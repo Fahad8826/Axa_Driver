@@ -118,9 +118,27 @@ class OrdersView extends StatelessWidget {
               }
 
               if (controller.error.value.isNotEmpty) {
-                return _ErrorView(
-                  message: controller.error.value,
-                  onRetry: () => controller.fetchOrders(reset: true),
+                return Center(
+                  child: GestureDetector(
+                    onTap: () => controller.fetchOrders(reset: true),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.refresh_rounded,
+                          size: 48,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Try again',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 );
               }
 
@@ -157,7 +175,7 @@ class OrdersView extends StatelessWidget {
                   ),
                   itemCount: controller.orders.length +
                       (controller.isLoadingMore.value ? 1 : 0),
-                  separatorBuilder: (_, __) =>
+                  separatorBuilder: (_, _) =>
                       SizedBox(height: layout.innerGapSm),
                   itemBuilder: (context, index) {
                     // Loading more indicator at bottom

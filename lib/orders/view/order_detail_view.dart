@@ -600,7 +600,7 @@ class _OrderItemCard extends StatelessWidget {
                   ? Image.network(
                       imageUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _imgPlaceholder(),
+                      errorBuilder: (_, _, _) => _imgPlaceholder(),
                     )
                   : _imgPlaceholder(),
             ),

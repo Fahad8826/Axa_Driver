@@ -1,11 +1,10 @@
 import 'dart:io'; // For Platform check
 import 'package:axa_driver/core/network/dioclient.dart';
 import 'package:axa_driver/core/services/app_pref.dart';
-import 'package:axa_driver/core/theme/apptheme.dart';
 import 'package:axa_driver/core/theme/utils/appfeedback.dart';
 import 'package:dio/dio.dart' as dio_pkg;
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart'; // ← for EdgeInsets
+// ← for EdgeInsets
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 

@@ -55,9 +55,27 @@ class LeaveListView extends StatelessWidget {
         }
 
         if (controller.error.value.isNotEmpty && controller.leaves.isEmpty) {
-          return AppErrorWidget(
-            message: controller.error.value,
-            onRetry: controller.fetchLeaves,
+          return Center(
+            child: GestureDetector(
+              onTap: controller.fetchLeaves,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.refresh_rounded,
+                    size: 48,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Try again',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           );
         }
 
@@ -84,7 +102,7 @@ class LeaveListView extends StatelessWidget {
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             itemCount: controller.filteredLeaves.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final leave = controller.filteredLeaves[index];
               return Container(

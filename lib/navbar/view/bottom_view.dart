@@ -3,7 +3,6 @@ import 'package:axa_driver/core/theme/app_icons.dart';
 import 'package:axa_driver/core/theme/apptheme.dart';
 import 'package:axa_driver/leave/view/leave_list_view.dart';
 import 'package:axa_driver/navbar/controller/bottomnav_controller.dart';
-import 'package:axa_driver/navbar/view/notification_view.dart';
 import 'package:axa_driver/orders/view/orders_view.dart';
 import 'package:axa_driver/profile/view/profile_view.dart';
 import 'package:flutter/material.dart';
