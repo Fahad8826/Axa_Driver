@@ -10,34 +10,28 @@ class ErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: AppDimens.pagePadding,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.wifi_off_rounded,
-                size: 48, color: AppColors.textHint),
-            const SizedBox(height: 12),
-            Text('Something went wrong',
-                style: AppTextStyles.headingSmall,
-                textAlign: TextAlign.center),
-            const SizedBox(height: 6),
-            // Text(message,
-            //     style: AppTextStyles.bodyMedium,
-            //     textAlign: TextAlign.center,
-            //     maxLines: 3,
-            //     overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: 160,
-              child: ElevatedButton(
-                onPressed: onRetry,
-                child: Text('Retry', style: AppTextStyles.button),
-              ),
-            ),
-          ],
+  child: Padding(
+    padding: AppDimens.pagePadding,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.wifi_off_rounded,
+            size: 36, color: AppColors.textHint),  // was 48
+        const SizedBox(height: 10),                // was 12
+        Text('Something went wrong',
+            style: AppTextStyles.headingSmall,
+            textAlign: TextAlign.center),
+        const SizedBox(height: 16),               // was 20
+        SizedBox(
+          width: 140,                             // was 160
+          child: ElevatedButton(
+            onPressed: onRetry,
+            child: Text('Retry', style: AppTextStyles.button),
+          ),
         ),
-      ),
-    );
+      ],
+    ),
+  ),
+);
   }
 }

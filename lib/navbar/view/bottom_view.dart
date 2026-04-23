@@ -133,7 +133,7 @@ class _BottomNavPageState extends State<BottomNavPage> {
       onTap: () => _controller.onNavTap(index),
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: screenWidth * 0.22,
+        width: screenWidth * 0.23,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:axa_driver/core/network/dioclient.dart';
 import 'package:axa_driver/navigation/model/order_detail_model.dart';
 import 'package:dio/dio.dart';
@@ -9,124 +11,162 @@ import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:axa_driver/core/services/location_service.dart';
+
 class NavigationController extends GetxController {
   final Dio _dio = DioClient.dio;
-
-  /// Guard flag — set to true in [onClose] so that any pending async
-  /// work stops touching the already-disposed [GoogleMapController].
   bool _isDisposed = false;
 
-  // ── Args passed from calling screen ───────────────────────────────────────
+  // ── Args ───────────────────────────────────────────────────────────────────
   late final int orderId;
-  late final double destLat;
-  late final double destLng;
 
-  // ── State ─────────────────────────────────────────────────────────────────
+  // Fallback coords from args (used until order loads)
+  double? _argLat;
+  double? _argLng;
+
+  // Final destination — set from order model once loaded
+  double? _destLat;
+  double? _destLng;
+
+  // ── State ──────────────────────────────────────────────────────────────────
   final isLoading = true.obs;
+  final isRouteLoading = false.obs;
   final error = ''.obs;
   final Rx<OrderDetailModel?> orderDetail = Rx(null);
 
-  // ── Map ───────────────────────────────────────────────────────────────────
+  // ── Map ────────────────────────────────────────────────────────────────────
   GoogleMapController? mapController;
   final currentPosition = Rx<LatLng?>(null);
-
-  // FIX: Use RxSet instead of plain Set wrapped in obs to avoid full map rebuilds
   final RxSet<Marker> markers = <Marker>{}.obs;
   final RxSet<Polyline> polylines = <Polyline>{}.obs;
 
-  // ── Stats ─────────────────────────────────────────────────────────────────
+  // ── Stats ──────────────────────────────────────────────────────────────────
   final distance = '—'.obs;
   final duration = '—'.obs;
 
-  // ── Map Mode ──────────────────────────────────────────────────────────────
-  final mapMode = 'google'.obs; // 'google' or 'flutter'
+  // ── Live GPS stream ────────────────────────────────────────────────────────
+  StreamSubscription<Position>? _positionStream;
 
   @override
   void onInit() {
     super.onInit();
     final args = Get.arguments as Map<String, dynamic>;
     orderId = args['orderId'] as int;
-    destLat = (args['destLat'] as num).toDouble();
-    destLng = (args['destLng'] as num).toDouble();
+    // Keep arg coords as fallback
+    _argLat = (args['destLat'] as num?)?.toDouble();
+    _argLng = (args['destLng'] as num?)?.toDouble();
+
     _init();
 
     Future.delayed(const Duration(seconds: 2), () async {
       try {
         await startLocationService();
       } catch (e) {
-        print('[Navbar] Location service start failed: $e');
+        debugPrint('[Nav] Location service start failed: $e');
       }
     });
   }
-  
 
   Future<void> _init() async {
-    // Run location fetch and order fetch concurrently to reduce wait time
-    await Future.wait([
-      _fetchLocation(),
-      fetchOrderDetail(),
-    ]);
-
-    // Bail out if the page was closed while we were fetching
+    // 1. Fetch order detail first — so we can get real destination coords
+    await fetchOrderDetail();
     if (_isDisposed) return;
 
-    // These depend on both location + order being ready
+    // 2. Resolve destination: prefer model coords over arg fallback
+    final order = orderDetail.value;
+    if (order != null &&
+        order.customerLat != 0.0 &&
+        order.customerLng != 0.0) {
+      _destLat = order.customerLat;
+      _destLng = order.customerLng;
+      debugPrint(
+          '[Nav] Destination from order model: $_destLat, $_destLng');
+    } else if (_argLat != null && _argLng != null) {
+      _destLat = _argLat;
+      _destLng = _argLng;
+      debugPrint('[Nav] Destination from args fallback: $_destLat, $_destLng');
+    } else {
+      error('Could not determine delivery destination.');
+      isLoading(false);
+      debugPrint('[Nav] ❌ No valid destination found');
+      return;
+    }
+
+    // 3. Get current GPS position
+    await _fetchLocation();
+    if (_isDisposed) return;
+
+    // 4. Build markers + route
     _buildMarkers();
-    await _fetchRoadPath();
-
-    // Bail out again — _fetchRoadPath is async
+    await _fetchRoute();
     if (_isDisposed) return;
-
-    // Fit bounds AFTER location is confirmed and map may already be ready
     _fitBoundsIfReady();
+
+    // 5. Start live GPS stream for driver position updates
+    _startPositionStream();
   }
 
-  // ── Fetch current GPS location ────────────────────────────────────────────
+  // ── Live GPS Stream ────────────────────────────────────────────────────────
+  void _startPositionStream() {
+    _positionStream?.cancel();
+    _positionStream = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 15, // trigger every 15 metres of movement
+      ),
+    ).listen(
+      (pos) {
+        if (_isDisposed) return;
+        final newPos = LatLng(pos.latitude, pos.longitude);
+        currentPosition.value = newPos;
+        _buildMarkers(); // keep driver marker current
+        debugPrint('[Nav] 📍 Position updated: ${pos.latitude}, ${pos.longitude}');
+      },
+      onError: (e) {
+        debugPrint('[Nav] Position stream error: $e');
+      },
+    );
+    debugPrint('[Nav] ✅ Live GPS stream started');
+  }
+
+  // ── GPS (initial fix) ──────────────────────────────────────────────────────
   Future<void> _fetchLocation() async {
     try {
-      // FIX: Use ONLY Geolocator for permissions — do NOT mix permission_handler
-      // with Geolocator. Mixing them causes crashes on Android and iOS.
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        debugPrint('Location services are disabled.');
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        debugPrint('[Nav] GPS service disabled');
         return;
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          debugPrint('Location permission denied.');
-          return;
-        }
+        if (permission == LocationPermission.denied) return;
       }
-
-      if (permission == LocationPermission.deniedForever) {
-        debugPrint('Location permission permanently denied.');
-        return;
-      }
+      if (permission == LocationPermission.deniedForever) return;
 
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-      );
+      ).timeout(const Duration(seconds: 15));
+
       currentPosition.value = LatLng(position.latitude, position.longitude);
 
-      // Straight-line distance as a quick placeholder
-      final distInMeters = Geolocator.distanceBetween(
-        position.latitude,
-        position.longitude,
-        destLat,
-        destLng,
-      );
-      distance.value = '${(distInMeters / 1000).toStringAsFixed(1)} km';
-      final mins = (distInMeters / 1000) / 40 * 60;
-      duration.value = '${mins.round()} min';
+      // Straight-line placeholder — replaced once real route loads
+      if (_destLat != null && _destLng != null) {
+        final distInMeters = Geolocator.distanceBetween(
+          position.latitude,
+          position.longitude,
+          _destLat!,
+          _destLng!,
+        );
+        distance.value = '${(distInMeters / 1000).toStringAsFixed(1)} km';
+        duration.value =
+            '${((distInMeters / 1000) / 40 * 60).round()} min';
+      }
     } catch (e) {
-      debugPrint('Location error: $e');
+      debugPrint('[Nav] Location error: $e');
     }
   }
 
-  // ── Fetch order detail from API ───────────────────────────────────────────
+  // ── Order detail ───────────────────────────────────────────────────────────
   Future<void> fetchOrderDetail() async {
     try {
       isLoading(true);
@@ -135,6 +175,7 @@ class NavigationController extends GetxController {
       orderDetail.value = OrderDetailModel.fromJson(
         response.data as Map<String, dynamic>,
       );
+      debugPrint('[Nav] ✅ Order loaded: ${orderDetail.value?.customerName}');
     } on DioException catch (e) {
       error(e.message ?? 'Failed to load order details.');
     } catch (_) {
@@ -144,176 +185,210 @@ class NavigationController extends GetxController {
     }
   }
 
-  // ── Build map markers ─────────────────────────────────────────────────────
+  // ── Markers ────────────────────────────────────────────────────────────────
   void _buildMarkers() {
-    final dest = LatLng(destLat, destLng);
-    final newMarkers = <Marker>{};
+    if (_destLat == null || _destLng == null) return;
 
-    newMarkers.add(
+    final newMarkers = <Marker>{
       Marker(
         markerId: const MarkerId('destination'),
-        position: dest,
+        position: LatLng(_destLat!, _destLng!),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
         infoWindow: InfoWindow(
           title: orderDetail.value?.customerName ?? 'Destination',
           snippet: orderDetail.value?.customerAddress,
         ),
       ),
-    );
+    };
 
     if (currentPosition.value != null) {
-      newMarkers.add(
-        Marker(
-          markerId: const MarkerId('current'),
-          position: currentPosition.value!,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-          infoWindow: const InfoWindow(title: 'Your Location'),
-        ),
-      );
+      newMarkers.add(Marker(
+        markerId: const MarkerId('current'),
+        position: currentPosition.value!,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        infoWindow: const InfoWindow(title: 'Your Location'),
+      ));
     }
 
-    // FIX: Assign all at once to trigger only one rebuild
     markers.assignAll(newMarkers);
   }
 
-  // ── Fetch the real road path ──────────────────────────────────────────────
-  Future<void> _fetchRoadPath() async {
-  final origin = currentPosition.value;
-  debugPrint('Current position: $origin');
-  if (origin == null) return;
-
-  try {
-    final apiKey = dotenv.env['GOOGLE_MAPS_KEY'] ?? '';
-    if (apiKey.isEmpty) {
-      mapMode.value = 'flutter';
-      _buildFallbackPolyline(origin);
+  // ── Google Maps route ──────────────────────────────────────────────────────
+  Future<void> _fetchRoute() async {
+    final origin = currentPosition.value;
+    if (origin == null || _destLat == null || _destLng == null) {
+      debugPrint('[Nav] Skipping route fetch — missing origin or destination');
       return;
     }
 
-    // v3.x: key goes in the constructor, not the call
-    final polylinePoints = PolylinePoints(apiKey: apiKey);
+    final apiKey = dotenv.env['GOOGLE_MAPS_KEY'] ?? '';
+    if (apiKey.isEmpty) {
+      debugPrint('[Nav] No Google Maps API key found in .env');
+      return;
+    }
 
-    final result = await polylinePoints.getRouteBetweenCoordinates(
-      request: PolylineRequest(
-        origin: PointLatLng(origin.latitude, origin.longitude),
-        destination: PointLatLng(destLat, destLng),
-        mode: TravelMode.driving,
-      ),
-    );
+    try {
+      isRouteLoading(true);
+      debugPrint(
+          '[Nav] Fetching route: ${origin.latitude},${origin.longitude} → $_destLat,$_destLng');
 
-    debugPrint('Polyline points count: ${result.points.length}');
-    debugPrint('Polyline error: ${result.errorMessage}');
-    debugPrint('API Key used: ${dotenv.env['GOOGLE_MAPS_KEY']}');
+      final result = await PolylinePoints(apiKey: apiKey)
+          .getRouteBetweenCoordinates(
+        request: PolylineRequest(
+          origin: PointLatLng(origin.latitude, origin.longitude),
+          destination: PointLatLng(_destLat!, _destLng!),
+          mode: TravelMode.driving,
+        ),
+      );
 
-    if (result.points.isNotEmpty) {
-      mapMode.value = 'google';
+      if (_isDisposed) return;
+
+      final err = result.errorMessage ?? '';
+      if (err.isNotEmpty) {
+        debugPrint('[Nav] Route error: $err');
+        return;
+      }
+
+      if (result.points.isEmpty) {
+        debugPrint('[Nav] No route points returned');
+        return;
+      }
+
       polylines.assignAll({
         Polyline(
           polylineId: const PolylineId('route'),
-          color: const Color(0xFF1976D2),
+          color: const Color(0xFF1A73E8),
           width: 5,
           points: result.points
               .map((p) => LatLng(p.latitude, p.longitude))
               .toList(),
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          jointType: JointType.round,
         ),
       });
 
-      // v3.x field names (same as v2.x for legacy result)
-      if (result.totalDistanceValue != null && result.totalDistanceValue! > 0) {
+      // Update stats with real route data
+      if ((result.totalDistanceValue ?? 0) > 0) {
         distance.value =
             '${(result.totalDistanceValue! / 1000).toStringAsFixed(1)} km';
       }
-      if (result.totalDurationValue != null && result.totalDurationValue! > 0) {
-        duration.value = '${(result.totalDurationValue! / 60).round()} min';
+      if ((result.totalDurationValue ?? 0) > 0) {
+        duration.value =
+            '${(result.totalDurationValue! / 60).round()} min';
       }
-    } else {
-      mapMode.value = 'flutter';
-      _buildFallbackPolyline(origin);
+
+      debugPrint('[Nav] ✅ Route loaded: ${distance.value}, ${duration.value}');
+    } catch (e) {
+      debugPrint('[Nav] Route fetch error: $e');
+    } finally {
+      isRouteLoading(false);
     }
-  } catch (e) {
-    debugPrint('Polyline fetch error: $e');
-    mapMode.value = 'flutter';
-    _buildFallbackPolyline(origin);
   }
-}
 
-  // ── Straight-line fallback polyline ───────────────────────────────────────
-  void _buildFallbackPolyline(LatLng origin) {
-  polylines.assignAll({
-    Polyline(
-      polylineId: const PolylineId('route'),
-      color: const Color(0xFF1976D2),
-      width: 5,
-      patterns: [
-        PatternItem.dash(20),   // longer dash
-        PatternItem.gap(10),    // clear gap
-      ],
-      points: [origin, LatLng(destLat, destLng)],
-    ),
-  });
-}
+  // ── Refresh route (called by refresh button) ───────────────────────────────
+  Future<void> refreshRoute() async {
+    debugPrint('[Nav] 🔄 Refreshing route...');
+    polylines.clear();
+    distance.value = '—';
+    duration.value = '—';
 
+    await _fetchLocation();
+    if (_isDisposed) return;
+
+    _buildMarkers();
+    await _fetchRoute();
+    if (_isDisposed) return;
+
+    _fitBoundsIfReady();
+    debugPrint('[Nav] ✅ Route refreshed');
+  }
+
+  // ── Map callbacks ──────────────────────────────────────────────────────────
   void onMapCreated(GoogleMapController controller) {
-    // If the widget was already disposed before the map finished creating,
-    // dispose the new controller immediately and do nothing else.
     if (_isDisposed) {
       controller.dispose();
       return;
     }
     mapController = controller;
-    // Fit bounds here — by the time the map is ready _init() has
-    // completed (both futures resolved), so currentPosition is populated.
     _fitBoundsIfReady();
   }
 
-  // FIX: Extracted to a safe guard that can be called from both
-  // onMapCreated (map ready before data) and end of _init (data ready before map)
   void _fitBoundsIfReady() {
     final origin = currentPosition.value;
-    if (_isDisposed || origin == null || mapController == null) return;
+    if (_isDisposed ||
+        origin == null ||
+        mapController == null ||
+        _destLat == null ||
+        _destLng == null) return;
 
-    final dest = LatLng(destLat, destLng);
-
-    final sw = LatLng(
-      origin.latitude < dest.latitude ? origin.latitude : dest.latitude,
-      origin.longitude < dest.longitude ? origin.longitude : dest.longitude,
-    );
-    final ne = LatLng(
-      origin.latitude > dest.latitude ? origin.latitude : dest.latitude,
-      origin.longitude > dest.longitude ? origin.longitude : dest.longitude,
-    );
-
+    final dest = LatLng(_destLat!, _destLng!);
     mapController!.animateCamera(
       CameraUpdate.newLatLngBounds(
-        LatLngBounds(southwest: sw, northeast: ne),
+        LatLngBounds(
+          southwest: LatLng(
+            origin.latitude < dest.latitude
+                ? origin.latitude
+                : dest.latitude,
+            origin.longitude < dest.longitude
+                ? origin.longitude
+                : dest.longitude,
+          ),
+          northeast: LatLng(
+            origin.latitude > dest.latitude
+                ? origin.latitude
+                : dest.latitude,
+            origin.longitude > dest.longitude
+                ? origin.longitude
+                : dest.longitude,
+          ),
+        ),
         80,
       ),
     );
   }
 
-  void centerOnDestination() {
-    if (_isDisposed) return;
-    mapController?.animateCamera(
-      CameraUpdate.newLatLngZoom(LatLng(destLat, destLng), 15),
+  /// Recenter map on driver's current position
+  void centerOnDriver() {
+    final pos = currentPosition.value;
+    if (_isDisposed || mapController == null || pos == null) return;
+    mapController!.animateCamera(
+      CameraUpdate.newLatLngZoom(pos, 16),
     );
   }
 
-  // ── Launch external navigation ────────────────────────────────────────────
+  /// Recenter map on delivery destination
+  void centerOnDestination() {
+    if (_isDisposed || mapController == null || _destLat == null) return;
+    mapController!.animateCamera(
+      CameraUpdate.newLatLngZoom(LatLng(_destLat!, _destLng!), 15),
+    );
+  }
+
+  // ── Launch external Google Maps navigation ─────────────────────────────────
   Future<void> launchGoogleMaps() async {
-    final url = Uri.parse('google.navigation:q=$destLat,$destLng&mode=d');
-    final fallbackUrl = Uri.parse(
-      'https://www.google.com/maps/dir/?api=1&destination=$destLat,$destLng&travelmode=driving',
+    if (_destLat == null || _destLng == null) return;
+
+    final url = Uri.parse(
+      'google.navigation:q=$_destLat,$_destLng&mode=d',
+    );
+    final fallback = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1'
+      '&destination=$_destLat,$_destLng&travelmode=driving',
     );
 
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
-    } else if (await canLaunchUrl(fallbackUrl)) {
-      await launchUrl(fallbackUrl, mode: LaunchMode.externalApplication);
+    } else if (await canLaunchUrl(fallback)) {
+      await launchUrl(fallback, mode: LaunchMode.externalApplication);
     }
   }
 
   @override
   void onClose() {
     _isDisposed = true;
+    _positionStream?.cancel();
+    _positionStream = null;
     mapController?.dispose();
     mapController = null;
     super.onClose();

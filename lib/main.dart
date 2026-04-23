@@ -19,11 +19,11 @@ Future<void> main() async {
   }
 
   // ── FCM init ───────────────────────────────────────────────────────────────
-  try {
-    await FcmService.instance.init();
-  } catch (e) {
-    print('[Main] FCM init failed: $e');
-  }
+  // try {
+  //   await FcmService.instance.init();
+  // } catch (e) {
+  //   print('[Main] FCM init failed: $e');
+  // }
 
   // ── Location service init ──────────────────────────────────────────────────
   try {

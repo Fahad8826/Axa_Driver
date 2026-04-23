@@ -7,6 +7,7 @@ import 'package:axa_driver/profile/view/change_password.dart';
 import 'package:axa_driver/profile/view/edit_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileView extends GetView<ProfileController> {
   const ProfileView({super.key});
@@ -25,6 +26,14 @@ class ProfileView extends GetView<ProfileController> {
         elevation: 0,
         centerTitle: true,
         title: Text('My Profile', style: AppTextStyles.headingMedium),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: AppColors.textPrimary),
+            onPressed: () {
+              _confirmLogout(context);
+            },
+          ),
+        ],
       ),
       body: Obx(() {
         // ── Shimmer ──────────────────────────────────────────────────────
@@ -187,7 +196,7 @@ class ProfileView extends GetView<ProfileController> {
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: AppColors.primary),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(20),
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 10),
                           ),
@@ -251,7 +260,7 @@ class ProfileView extends GetView<ProfileController> {
                 _ProfileCard(
                   child: Column(
                     children: [
-                      
+                      _SectionHeader(icon: Icons.settings, label: 'Settings'),
                       const _Divider(),
                       _SettingsRow(
                         icon: Icons.lock_outline_rounded,
@@ -265,7 +274,7 @@ class ProfileView extends GetView<ProfileController> {
                           );
                         },
                       ),
-                      const _Divider(),
+                      // const _Divider(),
                       _SettingsRow(
                         icon: Icons.delete_outline_rounded,
                         label: 'Delete Account',
@@ -275,10 +284,10 @@ class ProfileView extends GetView<ProfileController> {
                       ),
                       const _Divider(),
                       _SettingsRow(
-                        icon: Icons.logout_rounded,
-                        label: 'Logout',
+                        icon: Icons.policy,
+                        label: 'Privacy Policy',
                         screenHeight: screenHeight,
-                        onTap: () => _confirmLogout(context),
+                        onTap: () => _openPrivacyPolicy(),
                       ),
                     ],
                   ),
@@ -368,200 +377,265 @@ class ProfileView extends GetView<ProfileController> {
   void _confirmLogout(BuildContext context) {
     showDialog(
       context: context,
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 28, 20, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icon
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.divider),
-                ),
-                child: const Icon(
-                  Icons.logout_rounded,
-                  size: 20,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text('Sign out?', style: AppTextStyles.headingSmall),
-              const SizedBox(height: 6),
-              Text(
-                'You can sign back in anytime.',
-                style: AppTextStyles.bodySmall,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              Obx(
-                () => Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: controller.isLoggingOut.value
-                            ? null
-                            : () => Get.back(),
-                        style: TextButton.styleFrom(
-                          backgroundColor: AppColors.background,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            side: const BorderSide(color: AppColors.divider),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return Obx(
+          () => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: controller.isLoggingOut.value
+                  ? const SizedBox(
+                      height: 80,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
                         ),
-                        child: Text(
-                          'Cancel',
-                          style: AppTextStyles.labelMedium.copyWith(
+                      ),
+                    )
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ── Title ──
+                        Text('Sign out?', style: AppTextStyles.headingSmall),
+                        const SizedBox(height: 8),
+
+                        // ── Body ──
+                        Text(
+                          'You can sign back in anytime.',
+                          style: AppTextStyles.bodyMedium.copyWith(
                             color: AppColors.textSecondary,
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: controller.isLoggingOut.value
-                            ? null
-                            : () {
-                                controller.logout();
-                              },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: controller.isLoggingOut.value
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
+                        const SizedBox(height: 20),
+
+                        // ── Actions ──
+                        Row(
+                          children: [
+                            // Cancel — outlined
+                            Expanded(
+                              child: SizedBox(
+                                height: 38,
+                                child: OutlinedButton(
+                                  onPressed: () =>
+                                      Navigator.of(dialogContext).pop(),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.textSecondary,
+                                    side: BorderSide(
+                                      color: AppColors.textSecondary
+                                          .withOpacity(0.4),
+                                    ),
+                                    shape: const StadiumBorder(),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    'Cancel',
+                                    style: AppTextStyles.labelMedium.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
                                 ),
-                              )
-                            : Text(
-                                'Sign out',
-                                style: AppTextStyles.buttonSmall,
                               ),
-                      ),
+                            ),
+
+                            const SizedBox(width: 10),
+
+                            // Sign out — filled primary
+                            Expanded(
+                              child: SizedBox(
+                                height: 38,
+                                child: ElevatedButton(
+                                  onPressed: () => controller.logout(),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: AppColors.white,
+                                    elevation: 0,
+                                    shape: const StadiumBorder(),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    'Sign out',
+                                    style: AppTextStyles.labelMedium.copyWith(
+                                      color: AppColors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 4),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
   void _confirmDeleteAccount(BuildContext context) {
+    final confirmText = ''.obs;
+
     showDialog(
       context: context,
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 28, 20, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icon
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.statusCancelledSurface,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.statusCancelled.withOpacity(0.2),
-                  ),
-                ),
-                child: const Icon(
-                  Icons.delete_outline_rounded,
-                  size: 20,
-                  color: AppColors.statusCancelled,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text('Delete account?', style: AppTextStyles.headingSmall),
-              const SizedBox(height: 6),
-              Text(
-                'This permanently removes your profile, vehicle info, bank details, and order history. This cannot be undone.',
-                style: AppTextStyles.bodySmall,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Get.back(),
-                      style: TextButton.styleFrom(
-                        backgroundColor: AppColors.background,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          side: const BorderSide(color: AppColors.divider),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
-                      child: Text(
-                        'Keep account',
-                        style: AppTextStyles.labelMedium.copyWith(
-                          color: AppColors.textSecondary,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return Obx(
+          () => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: controller.isDeletingAccount.value
+                  ? const SizedBox(
+                      height: 80,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.statusCancelled,
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Obx(
-                      () => ElevatedButton(
-                        onPressed: controller.isDeletingAccount.value
-                            ? null
-                            : () {
-                                Get.back();
-                                controller.deleteAccount();
-                              },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.statusCancelled,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                    )
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ── Title ──
+                        Text(
+                          'Delete account?',
+                          style: AppTextStyles.headingSmall,
+                        ),
+                        const SizedBox(height: 8),
+
+                        // ── Body ──
+                        Text(
+                          'This permanently removes your profile, vehicle info, bank details, and order history. This cannot be undone.',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
                           ),
                         ),
-                        child: controller.isDeletingAccount.value
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
+                        const SizedBox(height: 16),
+
+                        // ── Confirm input ──
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.statusCancelledSurface,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: AppColors.statusCancelled.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 6),
+                              Text(
+                                'Type DELETE to confirm',
+                                style: AppTextStyles.labelSmall.copyWith(
+                                  color: AppColors.statusCancelled,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                              )
-                            : Text('Delete', style: AppTextStyles.buttonSmall),
-                      ),
+                              ),
+                              const SizedBox(height: 4),
+                              TextField(
+                                onChanged: (v) => confirmText.value = v.trim(),
+                                style: AppTextStyles.bodyMedium,
+                                decoration: const InputDecoration(
+                                  isDense: true,
+                                  border: InputBorder.none,
+                                  hintText: 'DELETE',
+                                  contentPadding: EdgeInsets.symmetric(
+                                    vertical: 6,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // ── Actions ──
+                        Row(
+                          children: [
+                            // Keep account — outlined
+                            Expanded(
+                              child: SizedBox(
+                                height: 38,
+                                child: OutlinedButton(
+                                  onPressed: () =>
+                                      Navigator.of(dialogContext).pop(),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.textSecondary,
+                                    side: BorderSide(
+                                      color: AppColors.textSecondary
+                                          .withOpacity(0.4),
+                                    ),
+                                    shape: const StadiumBorder(),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    'Cancel',
+                                    style: AppTextStyles.labelMedium.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(width: 10),
+
+                            // Delete — filled red, enabled only when typed
+                            Expanded(
+                              child: SizedBox(
+                                height: 38,
+                                child: ElevatedButton(
+                                  onPressed: confirmText.value == 'DELETE'
+                                      ? () async {
+                                          Navigator.of(dialogContext).pop();
+                                          controller.deleteAccount();
+                                        }
+                                      : null,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.statusCancelled,
+                                    foregroundColor: AppColors.white,
+                                    disabledBackgroundColor: AppColors
+                                        .statusCancelled
+                                        .withOpacity(0.3),
+                                    disabledForegroundColor: AppColors.white
+                                        .withOpacity(0.6),
+                                    elevation: 0,
+                                    shape: const StadiumBorder(),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    'Delete',
+                                    style: AppTextStyles.labelMedium.copyWith(
+                                      color: AppColors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -731,4 +805,14 @@ class _PhotoSourceButton extends StatelessWidget {
       ),
     ),
   );
+}
+
+Future<void> _openPrivacyPolicy() async {
+  final Uri url = Uri.parse(
+    'https://www.freeprivacypolicy.com/live/b5d5ce9a-03fa-4b04-b230-443e1be2847e',
+  );
+
+  if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+    throw 'Could not launch $url';
+  }
 }

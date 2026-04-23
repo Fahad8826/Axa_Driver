@@ -1,11 +1,16 @@
+
+
+// i just need to edit the feild name of latitude and longitude on the model thats al 
+// currenlty on the server that is not worked yet after they compelting i will workout with the location things
+
+
+
 import 'package:axa_driver/core/theme/apptheme.dart';
 import 'package:axa_driver/navigation/controller/navigation_controller.dart';
 import 'package:axa_driver/navigation/model/order_detail_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:flutter_map/flutter_map.dart' as fm;
-import 'package:latlong2/latlong.dart' as latlong;
 
 class NavigationView extends StatelessWidget {
   const NavigationView({super.key});
@@ -17,75 +22,118 @@ class NavigationView extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // ── Full-screen Map ─────────────────────────────────────────
-          Obx(
-            () {
-              if (ctrl.mapMode.value == 'google') {
-                return GoogleMap(
-                  initialCameraPosition: CameraPosition(
-                    target: LatLng(ctrl.destLat, ctrl.destLng),
-                    zoom: 14,
+          // ── Full-screen Google Map ─────────────────────────────────────────
+          Obx(() => GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  // Use current destination if available, else world center
+                  target: LatLng(
+                    ctrl.orderDetail.value?.customerLat ?? 20.5937,
+                    ctrl.orderDetail.value?.customerLng ?? 78.9629,
                   ),
-                  onMapCreated: ctrl.onMapCreated,
-                  markers: ctrl.markers.toSet(),
-                  polylines: ctrl.polylines.toSet(),
-                  myLocationEnabled: true,
-                  myLocationButtonEnabled: false,
-                  zoomControlsEnabled: false,
-                  mapToolbarEnabled: false,
-                );
-              } else {
-                // Fallback to Flutter Map
-                return fm.FlutterMap(
-                  options: fm.MapOptions(
-                    initialCenter: latlong.LatLng(ctrl.destLat, ctrl.destLng),
-                    initialZoom: 14.0,
-                  ),
-                  children: [
-                    fm.TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.example.app',
-                    ),
-                    fm.MarkerLayer(
-                      markers: ctrl.markers.map((marker) {
-                        return fm.Marker(
-                          point: latlong.LatLng(marker.position.latitude, marker.position.longitude),
-                          child: Icon(
-                            marker.markerId.value == 'destination' ? Icons.location_on : Icons.my_location,
-                            color: marker.markerId.value == 'destination' ? Colors.red : Colors.blue,
-                            size: 30,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                );
-              }
-            },
-          ),
+                  zoom: 14,
+                ),
+                onMapCreated: ctrl.onMapCreated,
+                markers: ctrl.markers.toSet(),
+                polylines: ctrl.polylines.toSet(),
+                myLocationEnabled: true,
+                myLocationButtonEnabled: false,
+                zoomControlsEnabled: false,
+                mapToolbarEnabled: false,
+                compassEnabled: true,
+                trafficEnabled: true,
+              )),
 
-          // ── Back button & Recenter ─────────────────────────────────────────
+          // ── Top FAB Row ────────────────────────────────────────────────────
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  // Back
                   _MapFab(
                     icon: Icons.arrow_back_rounded,
                     onTap: () => Get.back(),
                   ),
-                  _MapFab(
-                    icon: Icons.my_location_rounded,
-                    onTap: ctrl.centerOnDestination,
-                    iconColor: AppColors.primary,
+                  // Right-side cluster
+                  Row(
+                    children: [
+                      // Refresh route button
+                      Obx(() => _MapFab(
+                            icon: ctrl.isRouteLoading.value
+                                ? Icons.hourglass_top_rounded
+                                : Icons.refresh_rounded,
+                            onTap: ctrl.isRouteLoading.value
+                                ? () {}
+                                : ctrl.refreshRoute,
+                            iconColor: ctrl.isRouteLoading.value
+                                ? AppColors.textSecondary
+                                : AppColors.statusPending,
+                          )),
+                      const SizedBox(width: 8),
+                      // Center on destination
+                      _MapFab(
+                        icon: Icons.location_on_rounded,
+                        onTap: ctrl.centerOnDestination,
+                        iconColor: AppColors.statusCancelled,
+                      ),
+                      const SizedBox(width: 8),
+                      // Center on driver
+                      _MapFab(
+                        icon: Icons.my_location_rounded,
+                        onTap: ctrl.centerOnDriver,
+                        iconColor: AppColors.primary,
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
 
-          // ── Floating STATS Card ────────────────────────────────────────────
+          // ── Route loading banner ───────────────────────────────────────────
+          Obx(() {
+            if (!ctrl.isRouteLoading.value) return const SizedBox.shrink();
+            return Positioned(
+              top: 90,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: AppShadows.card,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Calculating route...',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+
+          // ── Floating Stats Card ────────────────────────────────────────────
           Positioned(
             top: 100,
             left: 16,
@@ -117,7 +165,8 @@ class NavigationView extends StatelessWidget {
                       Container(
                         width: 1,
                         height: 32,
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                        margin:
+                            const EdgeInsets.symmetric(horizontal: 16),
                         color: AppColors.divider,
                       ),
                       Obx(
@@ -135,7 +184,7 @@ class NavigationView extends StatelessWidget {
             ),
           ),
 
-          // ── Bottom sheet ───────────────────────────────────────────────────
+          // ── Bottom Sheet ───────────────────────────────────────────────────
           DraggableScrollableSheet(
             initialChildSize: 0.44,
             minChildSize: 0.18,
@@ -154,7 +203,8 @@ class NavigationView extends StatelessWidget {
                   if (ctrl.isLoading.value) {
                     return const Center(
                       child: CircularProgressIndicator(
-                          color: AppColors.primary),
+                        color: AppColors.primary,
+                      ),
                     );
                   }
                   if (ctrl.error.value.isNotEmpty) {
@@ -181,75 +231,7 @@ class NavigationView extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Error State
-// ─────────────────────────────────────────────────────────────────────────────
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.message, required this.onRetry});
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: AppColors.statusCancelledSurface,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.error_outline_rounded,
-                color: AppColors.statusCancelled,
-                size: 30,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Something went wrong',
-              style: AppTextStyles.headingSmall,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              message,
-              style: AppTextStyles.bodyMedium,
-              textAlign: TextAlign.center,
-              maxLines: 5,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: 140,
-              height: AppDimens.buttonHeightSmall,
-              child: ElevatedButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: const Text('Retry'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Map FAB button
+//  Map FAB
 // ─────────────────────────────────────────────────────────────────────────────
 class _MapFab extends StatelessWidget {
   const _MapFab({
@@ -313,18 +295,84 @@ class _StatItem extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-        Text(label, style: AppTextStyles.bodySmall, overflow: TextOverflow.ellipsis),
-               Text(
-                 value,
-                 style: AppTextStyles.labelLarge.copyWith(
-                   height: 1.2,
-                   color: AppColors.textPrimary,
-                 ),
-                 overflow: TextOverflow.ellipsis,
-               ),
+              Text(label, style: AppTextStyles.bodySmall),
+              Text(
+                value,
+                style: AppTextStyles.labelLarge.copyWith(
+                  height: 1.2,
+                  color: AppColors.textPrimary,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Error State
+// ─────────────────────────────────────────────────────────────────────────────
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message, required this.onRetry});
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: const BoxDecoration(
+                color: AppColors.statusCancelledSurface,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.error_outline_rounded,
+                color: AppColors.statusCancelled,
+                size: 30,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Something went wrong',
+              style: AppTextStyles.headingSmall,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              message,
+              style: AppTextStyles.bodyMedium,
+              textAlign: TextAlign.center,
+              maxLines: 5,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: 140,
+              height: AppDimens.buttonHeightSmall,
+              child: ElevatedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: const Text('Retry'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -339,7 +387,6 @@ class _BottomSheetContent extends StatelessWidget {
     required this.scrollController,
     required this.onNavigate,
   });
-
   final OrderDetailModel order;
   final ScrollController scrollController;
   final VoidCallback onNavigate;
@@ -349,7 +396,7 @@ class _BottomSheetContent extends StatelessWidget {
     return CustomScrollView(
       controller: scrollController,
       slivers: [
-        // ── Drag Handle ───────────────────────────────────────────────────
+        // Drag handle
         SliverToBoxAdapter(
           child: Column(
             children: [
@@ -369,14 +416,13 @@ class _BottomSheetContent extends StatelessWidget {
           ),
         ),
 
-        // ── Header: Title + Status + Buttons ──────────────────────────────
+        // Header
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Title & Status
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,14 +436,10 @@ class _BottomSheetContent extends StatelessWidget {
                     ],
                   ),
                 ),
-
                 const SizedBox(width: 10),
-
-                // Action Buttons
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Navigate button
                     _ActionButton(
                       label: 'Navigate',
                       icon: Icons.navigation_rounded,
@@ -407,9 +449,8 @@ class _BottomSheetContent extends StatelessWidget {
                       shadowColor: AppColors.primary.withOpacity(0.35),
                     ),
                     const SizedBox(width: 8),
-                    // Scanner button — glass green effect
                     _ScannerButton(
-                      onPressed: () => Get.toNamed("/scanner"),
+                      onPressed: () => Get.toNamed('/scanner'),
                     ),
                   ],
                 ),
@@ -418,7 +459,6 @@ class _BottomSheetContent extends StatelessWidget {
           ),
         ),
 
-        // ── Divider ───────────────────────────────────────────────────────
         const SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
@@ -428,7 +468,7 @@ class _BottomSheetContent extends StatelessWidget {
 
         const SliverToBoxAdapter(child: SizedBox(height: 14)),
 
-        // ── Customer Details Card ─────────────────────────────────────────
+        // Customer Details
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -456,7 +496,7 @@ class _BottomSheetContent extends StatelessWidget {
 
         const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
-        // ── Order Details Card ────────────────────────────────────────────
+        // Order Details
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -500,8 +540,9 @@ class _BottomSheetContent extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Action Button
+//  Small reusable widgets
 // ─────────────────────────────────────────────────────────────────────────────
+
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.label,
@@ -538,24 +579,21 @@ class _ActionButton extends StatelessWidget {
         ),
         shadowColor: shadowColor,
       ).copyWith(
-        elevation: WidgetStateProperty.resolveWith((states) =>
-            states.contains(WidgetState.pressed) ? 0 : 3),
+        elevation: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.pressed) ? 0 : 3,
+        ),
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Scanner Button — Glass Green Effect
-// ─────────────────────────────────────────────────────────────────────────────
 class _ScannerButton extends StatelessWidget {
   const _ScannerButton({required this.onPressed});
   final VoidCallback onPressed;
 
-  // Glass green colors
-  static const Color _glassGreen = Color(0xCC2E7D32);     // 80% opacity
-  static const Color _borderGreen = Color(0x8881C784);    // light green border
-  static const Color _iconGreen = Color(0xFFA5D6A7);      // soft light green icon
+  static const Color _glassGreen = Color(0xCC2E7D32);
+  static const Color _borderGreen = Color(0x8881C784);
+  static const Color _iconGreen = Color(0xFFA5D6A7);
   static const Color _rippleGreen = Color(0x2281C784);
 
   @override
@@ -579,12 +617,6 @@ class _ScannerButton extends StatelessWidget {
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
-              // inner highlight for glass sheen
-              BoxShadow(
-                color: Colors.white.withOpacity(0.10),
-                blurRadius: 1,
-                offset: const Offset(0, -1),
-              ),
             ],
           ),
           child: Container(
@@ -593,11 +625,8 @@ class _ScannerButton extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.qr_code_scanner_rounded,
-                  size: 15,
-                  color: _iconGreen,
-                ),
+                Icon(Icons.qr_code_scanner_rounded,
+                    size: 15, color: _iconGreen),
                 const SizedBox(width: 6),
                 Text(
                   'Scanner',
@@ -614,9 +643,6 @@ class _ScannerButton extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Status Badge
-// ─────────────────────────────────────────────────────────────────────────────
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({required this.status});
   final String status;
@@ -639,9 +665,6 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Section Card
-// ─────────────────────────────────────────────────────────────────────────────
 class _SectionCard extends StatelessWidget {
   const _SectionCard({
     required this.title,
@@ -682,9 +705,6 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Detail Row
-// ─────────────────────────────────────────────────────────────────────────────
 class _DetailRow extends StatelessWidget {
   const _DetailRow({
     required this.icon,
@@ -723,9 +743,6 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Order Item Row
-// ─────────────────────────────────────────────────────────────────────────────
 class _OrderItemRow extends StatelessWidget {
   const _OrderItemRow({
     required this.label,
@@ -742,7 +759,6 @@ class _OrderItemRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
-          // Thumbnail
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: SizedBox(
@@ -752,14 +768,12 @@ class _OrderItemRow extends StatelessWidget {
                   ? Image.network(
                       imageUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => _placeholder(),
+                      errorBuilder: (_, __, ___) => _placeholder(),
                     )
                   : _placeholder(),
             ),
           ),
           const SizedBox(width: 12),
-
-          // Details
           Expanded(
             child: Column(
               children: [
@@ -784,9 +798,6 @@ class _OrderItemRow extends StatelessWidget {
       );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Item Data Row (label / value)
-// ─────────────────────────────────────────────────────────────────────────────
 class _ItemDataRow extends StatelessWidget {
   const _ItemDataRow({required this.label, required this.value});
   final String label;

@@ -357,3 +357,5 @@ Future<void> stopLocationService() async {
   FlutterBackgroundService().invoke('stopService');
   print('[LocationService] 🛑 Stop invoked');
 }
+
+

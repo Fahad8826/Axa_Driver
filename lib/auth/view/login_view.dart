@@ -70,7 +70,7 @@ class LoginView extends StatelessWidget {
                       validator: controller.validatePhone,
                       style: AppTextStyles.inputText,
                       decoration: InputDecoration(
-                        hintText: '+91 9585258745',
+                        hintText: 'Enter Phone Number',
                         hintStyle: AppTextStyles.inputHint,
                         filled: true,
                         fillColor: AppColors.inputFill,
@@ -124,7 +124,7 @@ class LoginView extends StatelessWidget {
                         validator: controller.validatePassword,
                         style: AppTextStyles.inputText,
                         decoration: InputDecoration(
-                          hintText: '••••••••••',
+                          hintText: '**********',
                           hintStyle: AppTextStyles.inputHint,
                           filled: true,
                           fillColor: AppColors.inputFill,

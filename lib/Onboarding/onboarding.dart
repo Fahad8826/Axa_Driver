@@ -201,7 +201,7 @@ class _OnboardingViewState extends State<OnboardingView> {
                         shadowColor: Colors.transparent,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
-                            AppDimens.buttonRadius, // ← AppDimens
+                            AppDimens.buttonHeight, // ← AppDimens
                           ),
                         ),
                       ),

@@ -1,8 +1,10 @@
 import 'package:axa_driver/core/network/dioclient.dart';
 import 'package:axa_driver/core/theme/utils/app_error_handler.dart';
-import 'package:axa_driver/core/theme/utils/appfeedback.dart';
+import 'package:axa_driver/core/theme/utils/snackbars.dart';
 import 'package:axa_driver/leave/model/leave_model.dart';
+import 'package:axa_driver/navbar/controller/bottomnav_controller.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class LeaveController extends GetxController {
@@ -14,15 +16,16 @@ class LeaveController extends GetxController {
   final RxString error = ''.obs;
   final RxString selectedFilter = 'All'.obs;
 
+  // 0 = Home, 1 = Orders, 2 = Leave, 3 = Profile
+  static const int _leaveNavIndex = 2;
+
   List<LeaveModel> get filteredLeaves {
     if (selectedFilter.value.toLowerCase() == 'all') {
       return leaves;
     }
     return leaves
         .where(
-          (element) =>
-              element.status.toLowerCase() ==
-              selectedFilter.value.toLowerCase(),
+          (e) => e.status.toLowerCase() == selectedFilter.value.toLowerCase(),
         )
         .toList();
   }
@@ -31,6 +34,21 @@ class LeaveController extends GetxController {
   void onInit() {
     super.onInit();
     fetchLeaves();
+  }
+
+  void _goToLeaveList() {
+    // Get.currentRoute is the active route name.
+    // If it is NOT the bottom nav shell, there is a page on the stack to pop.
+    // We use Get.key.currentState which gives direct access to the Navigator.
+    final NavigatorState? nav = Get.key.currentState;
+
+    if (nav != null && nav.canPop()) {
+      // LeaveFormView is on the stack — pop it normally
+      nav.pop();
+    }
+
+    // Always switch the IndexedStack tab to Leave (index 2)
+    Get.find<BottomNavController>().onNavTap(_leaveNavIndex);
   }
 
   Future<void> fetchLeaves() async {
@@ -55,10 +73,6 @@ class LeaveController extends GetxController {
     }
   }
 
-  Future<void> filterAndSortLeaves() async {
-    // Optional helper
-  }
-
   Future<void> createLeave(LeaveModel leave) async {
     try {
       isSubmitting(true);
@@ -69,7 +83,7 @@ class LeaveController extends GetxController {
       if (response.statusCode == 201 || response.statusCode == 200) {
         AppFeedback.success('Leave applied successfully');
         await fetchLeaves();
-        Get.back();
+        _goToLeaveList();
       }
     } on DioException catch (e) {
       AppFeedback.fromError(AppErrorHandler.fromDioException(e));
@@ -90,7 +104,7 @@ class LeaveController extends GetxController {
       if (response.statusCode == 200) {
         AppFeedback.success('Leave updated successfully');
         await fetchLeaves();
-        Get.back();
+        _goToLeaveList();
       }
     } on DioException catch (e) {
       AppFeedback.fromError(AppErrorHandler.fromDioException(e));

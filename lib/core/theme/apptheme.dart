@@ -174,7 +174,7 @@ class AppTextStyles {
   static TextStyle get onboardingTitle => GoogleFonts.poppins(
         fontSize: 26,
         fontWeight: FontWeight.w800,
-        color: AppColors.primaryDark,
+        color: AppColors.primary,
         height: 1.3,
         letterSpacing: -0.3,
       );

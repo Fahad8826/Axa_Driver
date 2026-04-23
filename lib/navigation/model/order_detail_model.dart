@@ -3,6 +3,8 @@ class OrderDetailModel {
   final String status;
   final String customerName;
   final String customerAddress;
+  final double customerLat;
+  final double customerLng;
   final List<DetailWaterCan> waterCans;
   final List<DetailProduct> products;
   final List<DetailAddon> addons;
@@ -15,6 +17,8 @@ class OrderDetailModel {
     required this.status,
     required this.customerName,
     required this.customerAddress,
+    required this.customerLat,
+    required this.customerLng,
     required this.waterCans,
     required this.products,
     required this.addons,
@@ -29,6 +33,8 @@ class OrderDetailModel {
         status: json['status'] ?? '',
         customerName: json['customer_name'] ?? '',
         customerAddress: json['customer_address'] ?? '',
+        customerLat: (json['customer_lat'] as num?)?.toDouble() ?? 0.0,
+        customerLng: (json['customer_lng'] as num?)?.toDouble() ?? 0.0,
         waterCans: (json['water_cans'] as List<dynamic>? ?? [])
             .map((e) => DetailWaterCan.fromJson(e as Map<String, dynamic>))
             .toList(),
@@ -58,11 +64,11 @@ class DetailWaterCan {
   });
 
   factory DetailWaterCan.fromJson(Map<String, dynamic> json) => DetailWaterCan(
-    name: json['name'] ?? '',
-    quantity: json['quantity'] ?? 0,
-    litres: json['litres'] ?? 0,
-    image: json['image'] as String?,
-  );
+        name: json['name'] ?? '',
+        quantity: json['quantity'] ?? 0,
+        litres: json['litres'] ?? 0,
+        image: json['image'] as String?,
+      );
 }
 
 class DetailProduct {
@@ -73,10 +79,10 @@ class DetailProduct {
   const DetailProduct({required this.name, required this.quantity, this.image});
 
   factory DetailProduct.fromJson(Map<String, dynamic> json) => DetailProduct(
-    name: json['name'] ?? '',
-    quantity: json['quantity'] ?? 0,
-    image: json['image'] as String?,
-  );
+        name: json['name'] ?? '',
+        quantity: json['quantity'] ?? 0,
+        image: json['image'] as String?,
+      );
 }
 
 class DetailAddon {

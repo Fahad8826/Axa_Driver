@@ -33,7 +33,7 @@ class CurrentDeliveryCard extends StatelessWidget {
     final String? imageUrl = firstImageUrl(order);
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppDimens.cardRadius),
@@ -49,7 +49,7 @@ class CurrentDeliveryCard extends StatelessWidget {
               // Circle image — matches Figma
               _CircleImage(size: imgSize, imageUrl: imageUrl),
 
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
 
               Expanded(
                 child: Column(
@@ -95,120 +95,117 @@ class CurrentDeliveryCard extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // ── Two pill buttons side by side ─────────────────────────────────
-          Row(
+          const SizedBox(height: 6),
+
+// ── Two pill buttons ──────────────────────────────────────────────
+Row(
+  children: [
+    // Start Navigation
+    Expanded(
+      child: SizedBox(
+        height: 30,
+        child: ElevatedButton(
+          onPressed: () {
+            Get.toNamed(
+              AppRoutes.navigation,
+              arguments: {
+                'orderId': order.id,
+                'destLat': double.tryParse(order.latitude) ?? 0.0,
+                'destLng': double.tryParse(order.longitude) ?? 0.0,
+              },
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.white,
+            elevation: 0,
+            shape: const StadiumBorder(),
+            minimumSize: const Size(0, 30),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Start Navigation — filled blue pill, Expanded
-              Expanded(
-                child: SizedBox(
-                  height: 38,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Get.toNamed(
-                        AppRoutes.navigation,
-                        arguments: {
-                          'orderId': order.id,
-                          'destLat':
-                              double.tryParse(order.latitude) ?? 0.0,
-                          'destLng':
-                              double.tryParse(order.longitude) ?? 0.0,
-                        },
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.white,
-                      elevation: 0,
-                      // Pill shape
-                      shape: const StadiumBorder(),
-                      padding: EdgeInsets.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SvgPicture.asset(
-                          AppIcons.map,
-                          width: 14,
-                          height: 14,
-                          colorFilter: const ColorFilter.mode(
-                            AppColors.white,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                        const SizedBox(width: 5),
-                        Flexible(
-                          child: Text(
-                            'Start Navigation',
-                            style: AppTextStyles.buttonSmall
-                                .copyWith(fontSize: 12),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+              SvgPicture.asset(
+                AppIcons.map,
+                width: 12,
+                height: 12,
+                colorFilter: const ColorFilter.mode(
+                  AppColors.white,
+                  BlendMode.srcIn,
                 ),
               ),
-
-              const SizedBox(width: 8),
-
-              // Call Customer — outlined blue pill, Expanded
-              Expanded(
-                child: SizedBox(
-                  height: 38,
-                  child: OutlinedButton(
-                    onPressed: () async {
-                      final url = Uri.parse('tel:${order.phoneNumber}');
-                      if (await canLaunchUrl(url)) {
-                        await launchUrl(url);
-                      }
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(
-                        color: AppColors.primary,
-                        width: 1.5,
-                      ),
-                      // Pill shape
-                      shape: const StadiumBorder(),
-                      padding: EdgeInsets.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SvgPicture.asset(
-                          AppIcons.phone,
-                          width: 14,
-                          height: 14,
-                          colorFilter: const ColorFilter.mode(
-                            AppColors.primary,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                        const SizedBox(width: 5),
-                        Flexible(
-                          child: Text(
-                            'Call Customer',
-                            style: AppTextStyles.buttonSmall.copyWith(
-                              color: AppColors.primary,
-                              fontSize: 12,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  'Navigate',
+                  style: AppTextStyles.buttonSmall.copyWith(fontSize: 11),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    ),
+
+    const SizedBox(width: 8),
+
+    // Call Customer
+    Expanded(
+      child: SizedBox(
+        height: 30,
+        child: OutlinedButton(
+          onPressed: () async {
+            final url = Uri.parse('tel:${order.phoneNumber}');
+            if (await canLaunchUrl(url)) {
+              await launchUrl(url);
+            }
+          },
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary, width: 1),
+            shape: const StadiumBorder(),
+            minimumSize: const Size(0, 30),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SvgPicture.asset(
+                AppIcons.phone,
+                width: 12,
+                height: 12,
+                colorFilter: const ColorFilter.mode(
+                  AppColors.primary,
+                  BlendMode.srcIn,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  'Call',
+                  style: AppTextStyles.buttonSmall.copyWith(
+                    color: AppColors.primary,
+                    fontSize: 11,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  ],
+),
         ],
       ),
     );

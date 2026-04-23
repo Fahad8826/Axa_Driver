@@ -18,63 +18,37 @@ class AppLayout {
   final double screenWidth;
   final double screenHeight;
 
+
   // ── Page-level spacing ────────────────────────────────────────────────────
-  /// Horizontal page padding — 5 % of screen width (same as profile page).
-  double get hPad => screenWidth * 0.05;
+double get hPad => screenWidth * 0.04;
+double get vPad => screenHeight * 0.016;
+EdgeInsets get pagePadding =>
+    EdgeInsets.symmetric(horizontal: hPad, vertical: vPad);
 
-  /// Vertical page padding — 2.2 % of screen height (same as profile page).
-  double get vPad => screenHeight * 0.022;
+// ── Section spacing ───────────────────────────────────────────────────────
+double get sectionGap => screenHeight * 0.014;
+double get innerGapSm => screenHeight * 0.007;
+double get innerGapMd => screenHeight * 0.012;
 
-  /// Convenient EdgeInsets for page-level scroll padding.
-  EdgeInsets get pagePadding =>
-      EdgeInsets.symmetric(horizontal: hPad, vertical: vPad);
+// ── Typography scaling ────────────────────────────────────────────────────
+double get titleFontSize => screenHeight * 0.020;
+double get bodyFontSize => screenHeight * 0.014;
+double get labelFontSize => screenHeight * 0.012;
 
-  // ── Section spacing ───────────────────────────────────────────────────────
-  /// Gap between sections (e.g. between cards).
-  double get sectionGap => screenHeight * 0.018;
+// ── Summary card specifics ────────────────────────────────────────────────
+double get statValueFontSize => screenHeight * 0.022;
+double get statLabelFontSize => screenHeight * 0.012;
+double get statPillHPad => screenWidth * 0.03;
+double get statPillVPad => screenHeight * 0.007;
 
-  /// Small vertical gap inside cards.
-  double get innerGapSm => screenHeight * 0.010;
+// ── Decorative circle ─────────────────────────────────────────────────────
+double get decorCircleSize => screenWidth * 0.32;
 
-  /// Medium vertical gap inside cards.
-  double get innerGapMd => screenHeight * 0.016;
+// ── Card & button heights ─────────────────────────────────────────────────
+double get buttonHeightSm => screenHeight * 0.040;
+double get productImageLg => screenWidth * 0.14;
+double get productImageSm => screenWidth * 0.12;
 
-  // ── Typography scaling ────────────────────────────────────────────────────
-  /// Title / heading font size (~20 sp on a 844-pt screen).
-  double get titleFontSize => screenHeight * 0.024;
-
-  /// Body font size (~13 sp).
-  double get bodyFontSize => screenHeight * 0.016;
-
-  /// Small label font size (~11 sp).
-  double get labelFontSize => screenHeight * 0.013;
-
-  // ── Summary card specifics ────────────────────────────────────────────────
-  /// Number value inside a stat pill (~22 sp).
-  double get statValueFontSize => screenHeight * 0.026;
-
-  /// Label text below stat value (~11 sp).
-  double get statLabelFontSize => screenHeight * 0.013;
-
-  /// Horizontal padding inside a stat pill.
-  double get statPillHPad => screenWidth * 0.045;
-
-  /// Vertical padding inside a stat pill.
-  double get statPillVPad => screenHeight * 0.010;
-
-  // ── Decorative circle in summary card ─────────────────────────────────────
-  double get decorCircleSize => screenWidth * 0.40;
-
-  // ── Card & button heights ─────────────────────────────────────────────────
-  /// Standard small button height.
-  double get buttonHeightSm => screenHeight * 0.046;
-
-  /// Avatar / product image size for the current-delivery card.
-  double get productImageLg => screenWidth * 0.18;
-
-  /// Avatar / product image size for next-delivery cards.
-  double get productImageSm => screenWidth * 0.16;
-
-  // ── Icon sizes ────────────────────────────────────────────────────────────
-  double get iconSm => screenWidth * 0.04;
+// ── Icon sizes ────────────────────────────────────────────────────────────
+double get iconSm => screenWidth * 0.035;
 }

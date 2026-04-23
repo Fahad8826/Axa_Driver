@@ -17,17 +17,22 @@ class AppPrefs {
   static const _keyDriverId       = 'driver_id';
   static const _keyFcmToken       = 'fcm_token';   // ← consistent with secure storage
 
+  static String? _cachedAccessToken;
+
   // ── Tokens ────────────────────────────────────────────────────────────────
   static Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
   }) async {
+    _cachedAccessToken = accessToken;
     await _storage.write(key: _keyAccessToken, value: accessToken);
     await _storage.write(key: _keyRefreshToken, value: refreshToken);
   }
 
   static Future<String?> getAccessToken() async {
-    return _storage.read(key: _keyAccessToken);
+    if (_cachedAccessToken != null) return _cachedAccessToken;
+    _cachedAccessToken = await _storage.read(key: _keyAccessToken);
+    return _cachedAccessToken;
   }
 
   static Future<String?> getRefreshToken() async {
@@ -91,6 +96,7 @@ class AppPrefs {
   // Keeps onboarding_done  → user shouldn't see onboarding again after logout
   // Keeps fcm_token        → token is device-bound, no need to re-fetch
   static Future<void> clear() async {
+    _cachedAccessToken = null;
     await _storage.delete(key: _keyAccessToken);
     await _storage.delete(key: _keyRefreshToken);
     await _storage.delete(key: _keyIsLoggedIn);

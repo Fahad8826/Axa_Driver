@@ -30,8 +30,8 @@ class OrdersModel {
         status: json['status'] ?? '',
         customerName: json['customer_name'] ?? '',
         customerAddress: json['customer_address'] ?? '',
-        latitude: json['latitude'] as String?,
-        longitude: json['longitude'] as String?,
+        latitude: json['customer_latitude'] as String?,
+        longitude: json['customer_longitude'] as String?,
         waterCans: (json['water_cans'] as List<dynamic>? ?? [])
             .map((e) => OrderCanItem.fromJson(e as Map<String, dynamic>))
             .toList(),

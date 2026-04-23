@@ -5,6 +5,8 @@ import 'package:axa_driver/orders/controller/orders_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class OrderDetailView extends StatelessWidget {
   const OrderDetailView({super.key, required this.orderId});
@@ -171,16 +173,23 @@ class OrderDetailView extends StatelessWidget {
                         // Navigate button
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: () {
-                              Get.toNamed('/navigation', arguments: {
-                                'orderId': order.id,
-                                'destLat':
-                                    double.tryParse(order.latitude ?? '0') ??
-                                        0.0,
-                                'destLng':
-                                    double.tryParse(order.longitude ?? '0') ??
-                                        0.0,
-                              });
+                            onPressed: () async {
+                              final destLat =
+                                  double.tryParse(order.latitude ?? '0') ?? 0.0;
+                              final destLng =
+                                  double.tryParse(order.longitude ?? '0') ?? 0.0;
+                                  
+                              if (destLat == 0.0 && destLng == 0.0) {
+                                Get.snackbar('Error', 'Invalid destination coordinates', 
+                                  snackPosition: SnackPosition.BOTTOM);
+                                return;
+                              }
+                              
+                              final url = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$destLat,$destLng');
+                              if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                                Get.snackbar('Error', 'Could not open maps', 
+                                  snackPosition: SnackPosition.BOTTOM);
+                              }
                             },
                             icon: const Icon(Icons.navigation_rounded,
                                 size: 16, color: Colors.white),
@@ -356,6 +365,31 @@ class OrderDetailView extends StatelessWidget {
                       ],
                     ),
 
+                    if (order.status.toLowerCase() != 'delivered' && 
+                        order.status.toLowerCase() != 'cancelled') ...[
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 42,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _showImagePicker(context, controller, order.id),
+                          icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                          label: Obx(() => controller.isUploadingProof.value
+                              ? const SizedBox(
+                                  width: 16, height: 16, 
+                                  child: CircularProgressIndicator(strokeWidth: 2))
+                              : const Text('Upload Photo Proof')),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            side: const BorderSide(color: AppColors.primary),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+
                     // Show delivered time if available
                     if (order.deliveredAt != null &&
                         order.deliveredAt!.isNotEmpty) ...[
@@ -460,6 +494,46 @@ class OrderDetailView extends StatelessWidget {
       // If parsing fails, just truncate the raw string
       return raw.length > 20 ? '${raw.substring(0, 20)}…' : raw;
     }
+  }
+
+  void _showImagePicker(BuildContext context, OrdersController controller, int orderId) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: AppColors.primary),
+              title: const Text('Take a Photo'),
+              onTap: () async {
+                Get.back();
+                final picker = ImagePicker();
+                final file = await picker.pickImage(source: ImageSource.camera);
+                if (file != null) {
+                  controller.uploadDeliveryProof(orderId, file.path);
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: AppColors.primary),
+              title: const Text('Choose from Gallery'),
+              onTap: () async {
+                Get.back();
+                final picker = ImagePicker();
+                final file = await picker.pickImage(source: ImageSource.gallery);
+                if (file != null) {
+                  controller.uploadDeliveryProof(orderId, file.path);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   String _statusDescription(String status) {

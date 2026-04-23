@@ -1,4 +1,3 @@
-
 import 'package:axa_driver/core/theme/utils/app_layout.dart';
 import 'package:axa_driver/core/theme/app_icons.dart';
 import 'package:axa_driver/core/theme/apptheme.dart';
@@ -26,10 +25,31 @@ class OrdersView extends StatelessWidget {
         centerTitle: true,
         automaticallyImplyLeading: false,
         title: Text('My Deliveries', style: AppTextStyles.headingMedium),
+        // ── Silent refresh dot ─────────────────────────────────────────────
+        // A small pulsing dot in the action area shows when a background
+        // poll is running so the driver knows data is being checked.
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Obx(() {
+              if (!controller.isRefreshing.value) {
+                return const SizedBox(width: 20);
+              }
+              return const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
+              );
+            }),
+          ),
+        ],
       ),
       body: Column(
         children: [
-          // ── Search + Filter bar ──────────────────────────────────────────
+          // ── Search + Filter bar ────────────────────────────────────────────
           Padding(
             padding: EdgeInsets.fromLTRB(
               layout.hPad,
@@ -39,7 +59,6 @@ class OrdersView extends StatelessWidget {
             ),
             child: Row(
               children: [
-                // Search field — pill shape, grey fill
                 Expanded(
                   child: SizedBox(
                     height: 46,
@@ -73,11 +92,17 @@ class OrdersView extends StatelessWidget {
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide.none,
+                          borderSide: const BorderSide(
+                            color: AppColors.primary,
+                            width: 1.5,
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide.none,
+                          borderSide: const BorderSide(
+                            color: AppColors.primary,
+                            width: 1.5,
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(30),
@@ -86,34 +111,23 @@ class OrdersView extends StatelessWidget {
                             width: 1.5,
                           ),
                         ),
-                        disabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide(
-                            color: AppColors.primary,
-                            width: 1.5,
-                          ),
-                        ),
                       ),
                     ),
                   ),
                 ),
-
                 const SizedBox(width: 10),
-
-                // Filter button — blue pill square
                 _FilterButton(controller: controller),
               ],
             ),
           ),
 
-          // ── Orders list ──────────────────────────────────────────────────
+          // ── Orders list ────────────────────────────────────────────────────
           Expanded(
             child: Obx(() {
+              // Full-screen loader only on first load
               if (controller.isLoading.value) {
                 return const Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.primary,
-                  ),
+                  child: CircularProgressIndicator(color: AppColors.primary),
                 );
               }
 
@@ -124,17 +138,13 @@ class OrdersView extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.refresh_rounded,
-                          size: 48,
-                          color: AppColors.primary,
-                        ),
+                        const Icon(Icons.refresh_rounded,
+                            size: 48, color: AppColors.primary),
                         const SizedBox(height: 12),
                         Text(
                           'Try again',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.primary,
-                          ),
+                          style: AppTextStyles.bodyMedium
+                              .copyWith(color: AppColors.primary),
                         ),
                       ],
                     ),
@@ -143,19 +153,29 @@ class OrdersView extends StatelessWidget {
               }
 
               if (controller.orders.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                // Empty state is also pull-to-refreshable
+                return RefreshIndicator(
+                  color: AppColors.primary,
+                  onRefresh: controller.onRefresh,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     children: [
-                      Icon(
-                        Icons.inbox_rounded,
-                        size: 52,
-                        color: AppColors.textHint,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'No orders found',
-                        style: AppTextStyles.bodyMedium,
+                      SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.inbox_rounded,
+                              size: 52, color: AppColors.textHint),
+                          const SizedBox(height: 12),
+                          Text('No orders found',
+                              style: AppTextStyles.bodyMedium),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Pull down to refresh',
+                            style: AppTextStyles.bodySmall
+                                .copyWith(color: AppColors.textHint),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -164,9 +184,14 @@ class OrdersView extends StatelessWidget {
 
               return RefreshIndicator(
                 color: AppColors.primary,
-                onRefresh: () => controller.fetchOrders(reset: true),
+                // ← onRefresh wired to controller.onRefresh which also
+                //   resets the polling timer
+                onRefresh: controller.onRefresh,
                 child: ListView.separated(
                   controller: controller.scrollController,
+                  // AlwaysScrollableScrollPhysics ensures the drag gesture
+                  // fires even when the list is shorter than the screen
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: EdgeInsets.fromLTRB(
                     layout.hPad,
                     layout.innerGapSm,
@@ -175,17 +200,16 @@ class OrdersView extends StatelessWidget {
                   ),
                   itemCount: controller.orders.length +
                       (controller.isLoadingMore.value ? 1 : 0),
-                  separatorBuilder: (_, _) =>
+                  separatorBuilder: (_, __) =>
                       SizedBox(height: layout.innerGapSm),
                   itemBuilder: (context, index) {
-                    // Loading more indicator at bottom
+                    // Pagination spinner at the bottom
                     if (index == controller.orders.length) {
                       return const Padding(
                         padding: EdgeInsets.symmetric(vertical: 16),
                         child: Center(
                           child: CircularProgressIndicator(
-                            color: AppColors.primary,
-                          ),
+                              color: AppColors.primary),
                         ),
                       );
                     }
@@ -203,7 +227,7 @@ class OrdersView extends StatelessWidget {
   }
 }
 
-// ── Filter button with bottom sheet ──────────────────────────────────────────
+// ── Filter button ─────────────────────────────────────────────────────────────
 class _FilterButton extends StatelessWidget {
   const _FilterButton({required this.controller});
   final OrdersController controller;
@@ -219,11 +243,7 @@ class _FilterButton extends StatelessWidget {
           color: AppColors.primary,
           borderRadius: BorderRadius.circular(14),
         ),
-        child: const Icon(
-          Icons.tune_rounded,
-          color: AppColors.white,
-          size: 20,
-        ),
+        child: const Icon(Icons.tune_rounded, color: AppColors.white, size: 20),
       ),
     );
   }
@@ -241,7 +261,6 @@ class _FilterButton extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Handle
             Center(
               child: Container(
                 width: 40,
@@ -320,12 +339,10 @@ class _OrderCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Left: info rows ──────────────────────────────────────────────
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Name — blue
                 _IconText(
                   icon: AppIcons.profile,
                   text: order.customerName.isNotEmpty
@@ -334,7 +351,6 @@ class _OrderCard extends StatelessWidget {
                   isTitle: true,
                 ),
                 const SizedBox(height: 4),
-                // Address
                 _IconText(
                   icon: AppIcons.map,
                   text: order.customerAddress.isNotEmpty
@@ -342,7 +358,6 @@ class _OrderCard extends StatelessWidget {
                       : '—',
                 ),
                 const SizedBox(height: 4),
-                // Items summary
                 _IconText(
                   icon: AppIcons.bag,
                   text: order.itemSummary,
@@ -350,17 +365,12 @@ class _OrderCard extends StatelessWidget {
               ],
             ),
           ),
-
           const SizedBox(width: 8),
-
-          // ── Right: status chip + button ──────────────────────────────────
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // Status chip
               _StatusChip(status: order.status),
               const SizedBox(height: 8),
-              // View Details pill button
               SizedBox(
                 height: 32,
                 child: ElevatedButton(
@@ -417,7 +427,7 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
-// ── Icon + text row (reusable inside card) ────────────────────────────────────
+// ── Icon + text row ────────────────────────────────────────────────────────────
 class _IconText extends StatelessWidget {
   const _IconText({
     required this.icon,
@@ -454,42 +464,6 @@ class _IconText extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-// ── Error view ────────────────────────────────────────────────────────────────
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.wifi_off_rounded,
-                size: 48, color: AppColors.textHint),
-            const SizedBox(height: 12),
-            Text(message,
-                style: AppTextStyles.bodyMedium, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: onRetry,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: const StadiumBorder(),
-                minimumSize: const Size(120, 40),
-              ),
-              child: Text('Retry', style: AppTextStyles.buttonSmall),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

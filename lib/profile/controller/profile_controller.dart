@@ -2,7 +2,7 @@ import 'package:axa_driver/core/network/dioclient.dart';
 import 'package:axa_driver/core/services/app_pref.dart';
 import 'package:axa_driver/core/services/routers.dart';
 import 'package:axa_driver/core/theme/utils/app_error_handler.dart';
-import 'package:axa_driver/core/theme/utils/appfeedback.dart';
+import 'package:axa_driver/core/theme/utils/snackbars.dart';
 import 'package:axa_driver/profile/model/profile_model.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -229,21 +229,38 @@ class ProfileController extends GetxController {
   }
 
   // ── Delete account ─────────────────────────────────────────────────────────
-  Future<void> deleteAccount() async {
-    try {
-      isDeletingAccount(true);
-      await _dio.delete('/api/driver/delete-account/');
-      await AppPrefs.clear();
-      Get.offAllNamed(AppRoutes.login);
-    } on DioException catch (e) {
-      AppFeedback.fromError(AppErrorHandler.fromDioException(e));
-    } catch (_) {
-      AppFeedback.fromError(AppErrorHandler.generic());
-    } finally {
-      isDeletingAccount(false);
-    }
-  }
+  // Future<void> deleteAccount() async {
+  //   try {
+  //     isDeletingAccount(true);
+  //     await _dio.delete('/api/driver/delete-account/');
+  //     await AppPrefs.clear();
+  //     Get.offAllNamed(AppRoutes.login);
+  //   } on DioException catch (e) {
+  //     AppFeedback.fromError(AppErrorHandler.fromDioException(e));
+  //   } catch (_) {
+  //     AppFeedback.fromError(AppErrorHandler.generic());
+  //   } finally {
+  //     isDeletingAccount(false);
+  //   }
+  // }
+Future<void> deleteAccount() async {
+  try {
+    isDeletingAccount(true);
 
+    await _dio.delete('/api/driver/delete-account/');
+
+    await AppPrefs.clear();
+    await AppPrefs.setLoggedIn(false);
+
+    Get.offAllNamed(AppRoutes.login);
+
+  } catch (e) {
+    print(e);
+    AppFeedback.fromError(AppErrorHandler.generic());
+  } finally {
+    isDeletingAccount(false);
+  }
+}
   // ── Logout ────────────────────────────────────────────────────────────────
   Future<void> logout() async {
     try {
