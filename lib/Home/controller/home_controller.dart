@@ -1,4 +1,5 @@
 import 'package:axa_driver/Home/model/home_model.dart';
+import 'package:axa_driver/core/services/app_pref.dart';
 import 'package:axa_driver/core/network/dioclient.dart';
 import 'package:axa_driver/core/theme/apptheme.dart';
 import 'package:dio/dio.dart';
@@ -111,7 +112,11 @@ class HomeController extends GetxController {
 
   // ── Battery permission ─────────────────────────────────────────────────────
   Future<void> _checkBatteryPermission() async {
+    // If already granted, no need to show
     if (await Permission.ignoreBatteryOptimizations.isGranted) return;
+    
+    // If we already showed this dialog once, don't annoy the user again
+    if (await AppPrefs.isBatteryDialogShown()) return;
 
     await Future.delayed(const Duration(milliseconds: 800));
     _showBatteryDialog();
@@ -158,7 +163,10 @@ class HomeController extends GetxController {
                 children: [
                   Expanded(
                     child: TextButton(
-                      onPressed: () => Get.back(),
+                      onPressed: () async {
+                        Get.back();
+                        await AppPrefs.setBatteryDialogShown();
+                      },
                       style: TextButton.styleFrom(
                         backgroundColor: AppColors.background,
                         shape: RoundedRectangleBorder(
@@ -180,6 +188,7 @@ class HomeController extends GetxController {
                     child: ElevatedButton(
                       onPressed: () async {
                         Get.back();
+                        await AppPrefs.setBatteryDialogShown();
                         await Permission.ignoreBatteryOptimizations.request();
                       },
                       style: ElevatedButton.styleFrom(

@@ -5,6 +5,8 @@
 
 
 
+import 'package:axa_driver/core/utils/date_utils.dart';
+import 'package:axa_driver/core/utils/image_utils.dart';
 import 'package:axa_driver/core/theme/apptheme.dart';
 import 'package:axa_driver/navigation/controller/navigation_controller.dart';
 import 'package:axa_driver/navigation/model/order_detail_model.dart';
@@ -488,6 +490,11 @@ class _BottomSheetContent extends StatelessWidget {
                     icon: Icons.location_on_outlined,
                     label: order.customerAddress,
                   ),
+                  const SizedBox(height: 8),
+                  _DetailRow(
+                    icon: Icons.calendar_today_outlined,
+                    label: AppDateUtils.formatShortDate(order.scheduledDate),
+                  ),
                 ],
               ),
             ),
@@ -766,7 +773,7 @@ class _OrderItemRow extends StatelessWidget {
               height: 50,
               child: imageUrl != null && imageUrl!.isNotEmpty
                   ? Image.network(
-                      imageUrl!,
+                      ImageUtils.getFullUrl(imageUrl) ?? '',
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => _placeholder(),
                     )

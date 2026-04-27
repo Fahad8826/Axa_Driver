@@ -1,3 +1,4 @@
+import 'package:axa_driver/core/utils/image_utils.dart';
 import 'package:axa_driver/core/theme/apptheme.dart';
 import 'package:axa_driver/core/theme/utils/app_erro_widget.dart';
 import 'package:axa_driver/profile/controller/profile_controller.dart';
@@ -105,7 +106,7 @@ class ProfileView extends GetView<ProfileController> {
                                     controller.isUploadingPhoto.value
                                     ? null
                                     : (p.profilePicture != null
-                                          ? NetworkImage(p.profilePicture!)
+                                          ? NetworkImage(ImageUtils.getFullUrl(p.profilePicture) ?? '')
                                           : null),
                                 child: controller.isUploadingPhoto.value
                                     ? const CircularProgressIndicator(

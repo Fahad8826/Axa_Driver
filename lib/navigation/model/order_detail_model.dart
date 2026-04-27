@@ -11,6 +11,7 @@ class OrderDetailModel {
   final int totalLiters;
   final String? deliveredAt;
   final String? deliveryProofImage;
+  final String? scheduledDate;
 
   const OrderDetailModel({
     required this.id,
@@ -25,6 +26,7 @@ class OrderDetailModel {
     required this.totalLiters,
     this.deliveredAt,
     this.deliveryProofImage,
+    this.scheduledDate,
   });
 
   factory OrderDetailModel.fromJson(Map<String, dynamic> json) =>
@@ -47,6 +49,7 @@ class OrderDetailModel {
         totalLiters: json['total_liters'] ?? 0,
         deliveredAt: json['delivered_at'] as String?,
         deliveryProofImage: json['delivery_proof_image'] as String?,
+        scheduledDate: json['scheduled_date'] as String?,
       );
 }
 

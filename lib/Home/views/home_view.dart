@@ -216,7 +216,7 @@ class InfoRow extends StatelessWidget {
     this.bold = false,
   });
 
-  final String icon;
+  final dynamic icon;
   final String text;
   final double iconSize;
   final bool isTitle;
@@ -243,12 +243,18 @@ class InfoRow extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 1),
-          child: SvgPicture.asset(
-            icon,
-            width: iconSize,
-            height: iconSize,
-            colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-          ),
+          child: icon is String
+              ? SvgPicture.asset(
+                  icon as String,
+                  width: iconSize,
+                  height: iconSize,
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                )
+              : Icon(
+                  icon as IconData,
+                  size: iconSize,
+                  color: iconColor,
+                ),
         ),
         const SizedBox(width: 6),
         Expanded(

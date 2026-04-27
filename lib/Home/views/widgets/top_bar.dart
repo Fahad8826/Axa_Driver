@@ -1,3 +1,4 @@
+import 'package:axa_driver/core/utils/image_utils.dart';
 import 'package:axa_driver/core/theme/app_icons.dart';
 import 'package:axa_driver/core/theme/apptheme.dart';
 import 'package:axa_driver/core/theme/utils/snackbars.dart';
@@ -29,7 +30,7 @@ class TopBar extends StatelessWidget {
         return CircleAvatar(
           radius: 18,                          // was avatarLg/2 (~22)
           backgroundColor: AppColors.primarySurface,
-          backgroundImage: pic != null ? NetworkImage(pic) : null,
+          backgroundImage: pic != null ? NetworkImage(ImageUtils.getFullUrl(pic) ?? '') : null,
           child: pic == null
               ? SvgPicture.asset(
                   AppIcons.profile,

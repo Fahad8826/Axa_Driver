@@ -1,3 +1,4 @@
+import 'package:axa_driver/core/utils/date_utils.dart';
 import 'package:axa_driver/core/theme/utils/app_layout.dart';
 import 'package:axa_driver/core/theme/app_icons.dart';
 import 'package:axa_driver/core/theme/apptheme.dart';
@@ -362,6 +363,13 @@ class _OrderCard extends StatelessWidget {
                   icon: AppIcons.bag,
                   text: order.itemSummary,
                 ),
+                if (order.scheduledDate != null) ...[
+                  const SizedBox(height: 4),
+                  _IconText(
+                    icon: AppIcons.calender,
+                    text: AppDateUtils.formatShortDate(order.scheduledDate),
+                  ),
+                ],
               ],
             ),
           ),
@@ -434,23 +442,28 @@ class _IconText extends StatelessWidget {
     required this.text,
     this.isTitle = false,
   });
-  final String icon;
+  final dynamic icon;
   final String text;
   final bool isTitle;
 
   @override
   Widget build(BuildContext context) {
+    final color = isTitle ? AppColors.primary : AppColors.textSecondary;
     return Row(
       children: [
-        SvgPicture.asset(
-          icon,
-          width: 13,
-          height: 13,
-          colorFilter: ColorFilter.mode(
-            isTitle ? AppColors.primary : AppColors.textSecondary,
-            BlendMode.srcIn,
+        if (icon is String)
+          SvgPicture.asset(
+            icon as String,
+            width: 13,
+            height: 13,
+            colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+          )
+        else
+          Icon(
+            icon as IconData,
+            size: 13,
+            color: color,
           ),
-        ),
         const SizedBox(width: 5),
         Flexible(
           child: Text(

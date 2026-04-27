@@ -1,4 +1,5 @@
-
+import 'package:axa_driver/core/utils/date_utils.dart';
+import 'package:axa_driver/core/utils/image_utils.dart';
 import 'package:axa_driver/Home/model/home_model.dart';
 import 'package:axa_driver/Home/views/home_view.dart';
 import 'package:axa_driver/core/theme/utils/app_layout.dart';
@@ -87,7 +88,12 @@ class NextDeliveryCard extends StatelessWidget {
             ),
           ),
         ),
-
+      const SizedBox(height: 4),
+      InfoRow(
+        icon: AppIcons.calender,
+        text: AppDateUtils.formatShortDate(order.scheduledDate),
+        iconSize: iconSize,
+      ),
       const SizedBox(height: 8),
 
       // ── Button pinned to bottom-right ──
@@ -166,7 +172,7 @@ class _CircleImage extends StatelessWidget {
         height: size,
         child: imageUrl != null && imageUrl!.isNotEmpty
             ? Image.network(
-                imageUrl!,
+                ImageUtils.getFullUrl(imageUrl) ?? '',
                 fit: BoxFit.cover,
                 errorBuilder: (_, _, _) => _placeholder(),
               )

@@ -1,3 +1,5 @@
+import 'package:axa_driver/core/utils/date_utils.dart';
+import 'package:axa_driver/core/utils/image_utils.dart';
 import 'package:axa_driver/core/theme/utils/app_layout.dart';
 import 'package:axa_driver/core/theme/app_icons.dart';
 import 'package:axa_driver/core/theme/apptheme.dart';
@@ -156,6 +158,25 @@ class OrderDetailView extends StatelessWidget {
                             order.customerAddress.isNotEmpty
                                 ? order.customerAddress
                                 : '—',
+                            style: AppTextStyles.bodyMedium,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Scheduled Date
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today_rounded,
+                          size: 16,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            AppDateUtils.formatFullDate(order.scheduledDate),
                             style: AppTextStyles.bodyMedium,
                           ),
                         ),
@@ -671,12 +692,12 @@ class _OrderItemCard extends StatelessWidget {
               width: 52,
               height: 52,
               child: imageUrl != null && imageUrl!.isNotEmpty
-                  ? Image.network(
-                      imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => _imgPlaceholder(),
-                    )
-                  : _imgPlaceholder(),
+                ? Image.network(
+                    ImageUtils.getFullUrl(imageUrl) ?? '',
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => _imgPlaceholder(),
+                  )
+                : _imgPlaceholder(),
             ),
           ),
           const SizedBox(width: 14),

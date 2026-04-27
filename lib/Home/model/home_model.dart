@@ -87,6 +87,7 @@ class OrderModel {
   final String longitude;
   final String status;
   final String deliveryDate;
+  final String scheduledDate;
   final List<WaterCanItem> waterCans;
   final List<ProductItem> products;
   final List<AddonItem> addons;
@@ -100,6 +101,7 @@ class OrderModel {
     required this.longitude,
     required this.status,
     required this.deliveryDate,
+    required this.scheduledDate,
     required this.waterCans,
     required this.products,
     required this.addons,
@@ -114,6 +116,7 @@ class OrderModel {
         longitude: json['longitude']?.toString() ?? '',
         status: json['status'] ?? '',
         deliveryDate: json['delivery_date'] ?? '',
+        scheduledDate: json['scheduled_date'] ?? '',
         waterCans: (json['water_cans'] as List<dynamic>? ?? [])
             .map((e) => WaterCanItem.fromJson(e as Map<String, dynamic>))
             .toList(),

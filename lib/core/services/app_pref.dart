@@ -16,6 +16,7 @@ class AppPrefs {
   static const _keyDriverPhone    = 'driver_phone';
   static const _keyDriverId       = 'driver_id';
   static const _keyFcmToken       = 'fcm_token';   // ← consistent with secure storage
+  static const _keyBatteryDialogShown = 'battery_dialog_shown';
 
   static String? _cachedAccessToken;
 
@@ -90,6 +91,16 @@ class AppPrefs {
 
   static Future<String?> getFcmToken() async {
     return _storage.read(key: _keyFcmToken);
+  }
+
+  // ── Battery Dialog Flag ───────────────────────────────────────────────────
+  static Future<void> setBatteryDialogShown() async {
+    await _storage.write(key: _keyBatteryDialogShown, value: 'true');
+  }
+
+  static Future<bool> isBatteryDialogShown() async {
+    final value = await _storage.read(key: _keyBatteryDialogShown);
+    return value == 'true';
   }
 
   // ── Clear (logout) ────────────────────────────────────────────────────────

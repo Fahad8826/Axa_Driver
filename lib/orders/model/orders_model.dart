@@ -10,6 +10,7 @@ class OrdersModel {
   final List<OrderAddonItem> addons;
   final int totalLiters;
   final String? deliveredAt;
+  final String? scheduledDate;
 
   const OrdersModel({
     required this.id,
@@ -23,6 +24,7 @@ class OrdersModel {
     required this.addons,
     required this.totalLiters,
     this.deliveredAt,
+    this.scheduledDate,
   });
 
   factory OrdersModel.fromJson(Map<String, dynamic> json) => OrdersModel(
@@ -43,6 +45,7 @@ class OrdersModel {
             .toList(),
         totalLiters: json['total_liters'] ?? 0,
         deliveredAt: json['delivered_at'] as String?,
+        scheduledDate: json['scheduled_date'] as String?,
       );
 
   String get itemSummary {
