@@ -57,14 +57,26 @@ class CurrentDeliveryCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    InfoRow(
-                      icon: AppIcons.profile,
-                      text: order.customerName.isNotEmpty
-                          ? order.customerName
-                          : '—',
-                      isTitle: true,
-                      iconSize: iconSize,
-                    ),
+                    Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: InfoRow(
+                    icon: AppIcons.profile,
+                    text: order.customerName.isNotEmpty ? order.customerName : '—',
+                    isTitle: true,
+                    iconSize: iconSize,
+                  ),
+                ),
+                Text(
+                  AppDateUtils.formatShortDate(order.scheduledDate),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
                     const SizedBox(height: 4),
                     InfoRow(
                       icon: AppIcons.map,
@@ -91,12 +103,7 @@ class CurrentDeliveryCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                    const SizedBox(height: 4),
-                    InfoRow(
-                      icon: AppIcons.calender,
-                      text: AppDateUtils.formatShortDate(order.scheduledDate),
-                      iconSize: iconSize,
-                    ),
+
                   ],
                 ),
               ),
@@ -108,112 +115,128 @@ class CurrentDeliveryCard extends StatelessWidget {
           // ── Two pill buttons side by side ─────────────────────────────────
           const SizedBox(height: 6),
 
-// ── Two pill buttons ──────────────────────────────────────────────
-Row(
-  children: [
-    // Start Navigation
-    Expanded(
-      child: SizedBox(
-        height: 30,
-        child: ElevatedButton(
-          onPressed: () {
-            Get.toNamed(
-              AppRoutes.navigation,
-              arguments: {
-                'orderId': order.id,
-                'destLat': double.tryParse(order.latitude) ?? 0.0,
-                'destLng': double.tryParse(order.longitude) ?? 0.0,
-              },
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.white,
-            elevation: 0,
-            shape: const StadiumBorder(),
-            minimumSize: const Size(0, 30),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
+          // ── Two pill buttons ──────────────────────────────────────────────
+          Row(
             children: [
-              SvgPicture.asset(
-                AppIcons.map,
-                width: 12,
-                height: 12,
-                colorFilter: const ColorFilter.mode(
-                  AppColors.white,
-                  BlendMode.srcIn,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  'Navigate',
-                  style: AppTextStyles.buttonSmall.copyWith(fontSize: 11),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-
-    const SizedBox(width: 8),
-
-    // Call Customer
-    Expanded(
-      child: SizedBox(
-        height: 30,
-        child: OutlinedButton(
-          onPressed: () async {
-            final url = Uri.parse('tel:${order.phoneNumber}');
-            if (await canLaunchUrl(url)) {
-              await launchUrl(url);
-            }
-          },
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.primary, width: 1),
-            shape: const StadiumBorder(),
-            minimumSize: const Size(0, 30),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SvgPicture.asset(
-                AppIcons.phone,
-                width: 12,
-                height: 12,
-                colorFilter: const ColorFilter.mode(
-                  AppColors.primary,
-                  BlendMode.srcIn,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  'Call',
-                  style: AppTextStyles.buttonSmall.copyWith(
-                    color: AppColors.primary,
-                    fontSize: 11,
+              // Start Navigation
+              Expanded(
+                child: SizedBox(
+                  height: 30,
+                  child: ElevatedButton(
+                    // onPressed: () {
+                    //   Get.toNamed(
+                    //     AppRoutes.navigation,
+                    //     arguments: {
+                    //       'orderId': order.id,
+                    //       'destLat': double.tryParse(order.latitude) ?? 0.0,
+                    //       'destLng': double.tryParse(order.longitude) ?? 0.0,
+                    //     },
+                    //   );
+                    // },
+                    onPressed: () {
+                      Get.toNamed(
+                        AppRoutes.navigation,
+                        arguments: {
+                          'orderId': order.id,
+                          'destLat': double.tryParse(order.latitude) ?? 0.0,
+                          'destLng': double.tryParse(order.longitude) ?? 0.0,
+                          'orderType': 'nearest', // ← add this
+                        },
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.white,
+                      elevation: 0,
+                      shape: const StadiumBorder(),
+                      minimumSize: const Size(0, 30),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SvgPicture.asset(
+                          AppIcons.map,
+                          width: 12,
+                          height: 12,
+                          colorFilter: const ColorFilter.mode(
+                            AppColors.white,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            'Navigate',
+                            style: AppTextStyles.buttonSmall.copyWith(
+                              fontSize: 11,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              // Call Customer
+              Expanded(
+                child: SizedBox(
+                  height: 30,
+                  child: OutlinedButton(
+                    onPressed: () async {
+                      final url = Uri.parse('tel:${order.phoneNumber}');
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(url);
+                      }
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(
+                        color: AppColors.primary,
+                        width: 1,
+                      ),
+                      shape: const StadiumBorder(),
+                      minimumSize: const Size(0, 30),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SvgPicture.asset(
+                          AppIcons.phone,
+                          width: 12,
+                          height: 12,
+                          colorFilter: const ColorFilter.mode(
+                            AppColors.primary,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            'Call',
+                            style: AppTextStyles.buttonSmall.copyWith(
+                              color: AppColors.primary,
+                              fontSize: 11,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-        ),
-      ),
-    ),
-  ],
-),
         ],
       ),
     );
@@ -245,13 +268,13 @@ class _CircleImage extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-        color: AppColors.primarySurface,
-        child: Center(
-          child: Icon(
-            Icons.water_drop_rounded,
-            color: AppColors.primary,
-            size: size * 0.45,
-          ),
-        ),
-      );
+    color: AppColors.primarySurface,
+    child: Center(
+      child: Icon(
+        Icons.water_drop_rounded,
+        color: AppColors.primary,
+        size: size * 0.45,
+      ),
+    ),
+  );
 }

@@ -62,8 +62,7 @@ class OrderDetailView extends StatelessWidget {
                         size: 30, color: AppColors.statusCancelled),
                   ),
                   const SizedBox(height: 14),
-                  Text('Failed to load order',
-                      style: AppTextStyles.headingSmall),
+                  Text('Failed to load order', style: AppTextStyles.headingSmall),
                   const SizedBox(height: 6),
                   Text(controller.detailError.value,
                       style: AppTextStyles.bodyMedium,
@@ -110,7 +109,6 @@ class OrderDetailView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Name
                     Row(
                       children: [
                         SvgPicture.asset(
@@ -125,9 +123,7 @@ class OrderDetailView extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            order.customerName.isNotEmpty
-                                ? order.customerName
-                                : '—',
+                            order.customerName.isNotEmpty ? order.customerName : '—',
                             style: AppTextStyles.headingSmall
                                 .copyWith(color: AppColors.primary),
                           ),
@@ -135,8 +131,6 @@ class OrderDetailView extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-
-                    // Address
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -164,15 +158,10 @@ class OrderDetailView extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-
-                    // Scheduled Date
                     Row(
                       children: [
-                        const Icon(
-                          Icons.calendar_today_rounded,
-                          size: 16,
-                          color: AppColors.textSecondary,
-                        ),
+                        const Icon(Icons.calendar_today_rounded,
+                            size: 16, color: AppColors.textSecondary),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -182,16 +171,11 @@ class OrderDetailView extends StatelessWidget {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 14),
-
-                    // ── Action Buttons Row ─────────────────────────────────
-                    const Divider(
-                        height: 1, thickness: 1, color: AppColors.divider),
+                    const Divider(height: 1, thickness: 1, color: AppColors.divider),
                     const SizedBox(height: 14),
                     Row(
                       children: [
-                        // Navigate button
                         Expanded(
                           child: ElevatedButton.icon(
                             onPressed: () async {
@@ -199,26 +183,24 @@ class OrderDetailView extends StatelessWidget {
                                   double.tryParse(order.latitude ?? '0') ?? 0.0;
                               final destLng =
                                   double.tryParse(order.longitude ?? '0') ?? 0.0;
-                                  
                               if (destLat == 0.0 && destLng == 0.0) {
-                                Get.snackbar('Error', 'Invalid destination coordinates', 
-                                  snackPosition: SnackPosition.BOTTOM);
+                                Get.snackbar('Error', 'Invalid destination coordinates',
+                                    snackPosition: SnackPosition.BOTTOM);
                                 return;
                               }
-                              
-                              final url = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$destLat,$destLng');
-                              if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-                                Get.snackbar('Error', 'Could not open maps', 
-                                  snackPosition: SnackPosition.BOTTOM);
+                              final url = Uri.parse(
+                                  'https://www.google.com/maps/dir/?api=1&destination=$destLat,$destLng');
+                              if (!await launchUrl(url,
+                                  mode: LaunchMode.externalApplication)) {
+                                Get.snackbar('Error', 'Could not open maps',
+                                    snackPosition: SnackPosition.BOTTOM);
                               }
                             },
                             icon: const Icon(Icons.navigation_rounded,
                                 size: 16, color: Colors.white),
-                            label: Text(
-                              'Navigate',
-                              style: AppTextStyles.labelMedium
-                                  .copyWith(color: Colors.white),
-                            ),
+                            label: Text('Navigate',
+                                style: AppTextStyles.labelMedium
+                                    .copyWith(color: Colors.white)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
@@ -227,8 +209,7 @@ class OrderDetailView extends StatelessWidget {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              shadowColor:
-                                  AppColors.primary.withOpacity(0.35),
+                              shadowColor: AppColors.primary.withOpacity(0.35),
                             ).copyWith(
                               elevation: WidgetStateProperty.resolveWith(
                                 (s) => s.contains(WidgetState.pressed) ? 0 : 3,
@@ -237,8 +218,6 @@ class OrderDetailView extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 10),
-
-                        // Scanner button — glass green
                         Expanded(
                           child: _GlassScannerButton(
                             onPressed: () => Get.toNamed("/scanner"),
@@ -266,7 +245,6 @@ class OrderDetailView extends StatelessWidget {
                   ),
                 ),
               ),
-
               ...order.products.map(
                 (p) => Padding(
                   padding: EdgeInsets.only(bottom: layout.innerGapSm),
@@ -277,7 +255,6 @@ class OrderDetailView extends StatelessWidget {
                   ),
                 ),
               ),
-
               ...order.addons.map(
                 (a) => Padding(
                   padding: EdgeInsets.only(bottom: layout.innerGapSm),
@@ -304,8 +281,7 @@ class OrderDetailView extends StatelessWidget {
               SizedBox(height: layout.sectionGap),
 
               // ── Delivery Confirmation ────────────────────────────────────
-              Text('Delivery Confirmation',
-                  style: AppTextStyles.headingMedium),
+              Text('Delivery Confirmation', style: AppTextStyles.headingMedium),
               SizedBox(height: layout.innerGapSm),
               _SectionCard(
                 child: Column(
@@ -314,7 +290,6 @@ class OrderDetailView extends StatelessWidget {
                     // Status row
                     Row(
                       children: [
-                        // Status icon
                         Container(
                           width: 40,
                           height: 40,
@@ -333,10 +308,7 @@ class OrderDetailView extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Order Status',
-                                style: AppTextStyles.bodySmall,
-                              ),
+                              Text('Order Status', style: AppTextStyles.bodySmall),
                               const SizedBox(height: 2),
                               Text(
                                 _statusLabel(order.status),
@@ -347,7 +319,6 @@ class OrderDetailView extends StatelessWidget {
                             ],
                           ),
                         ),
-                        // Status badge
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 5),
@@ -366,8 +337,7 @@ class OrderDetailView extends StatelessWidget {
                     ),
 
                     const SizedBox(height: 12),
-                    const Divider(
-                        height: 1, thickness: 1, color: AppColors.divider),
+                    const Divider(height: 1, thickness: 1, color: AppColors.divider),
                     const SizedBox(height: 12),
 
                     // Description line
@@ -386,19 +356,71 @@ class OrderDetailView extends StatelessWidget {
                       ],
                     ),
 
-                    if (order.status.toLowerCase() != 'delivered' && 
+                    // ── Mark as Picked button ──────────────────────────────
+                    Obx(() {
+                      final alreadyDone =
+                          order.status.toLowerCase() == 'picked' ||
+                          order.status.toLowerCase() == 'delivered' ||
+                          order.status.toLowerCase() == 'cancelled';
+
+                      if (controller.isPickedUp.value || alreadyDone) {
+                        return const SizedBox.shrink();
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 14),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 42,
+                          child: ElevatedButton.icon(
+                            onPressed: controller.isMarkingPicked.value
+                                ? null
+                                : () => controller.markAsPicked(order.id),
+                            icon: controller.isMarkingPicked.value
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.check_circle_outline_rounded,
+                                    size: 18,
+                                    color: Colors.white,
+                                  ),
+                            label: const Text('Mark as Picked'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.statusPending,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+
+                    // ── Upload Photo Proof ─────────────────────────────────
+                    if (order.status.toLowerCase() != 'delivered' &&
                         order.status.toLowerCase() != 'cancelled') ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       SizedBox(
                         width: double.infinity,
                         height: 42,
                         child: OutlinedButton.icon(
-                          onPressed: () => _showImagePicker(context, controller, order.id),
+                          onPressed: () =>
+                              _showImagePicker(context, controller, order.id),
                           icon: const Icon(Icons.camera_alt_outlined, size: 18),
                           label: Obx(() => controller.isUploadingProof.value
                               ? const SizedBox(
-                                  width: 16, height: 16, 
-                                  child: CircularProgressIndicator(strokeWidth: 2))
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
                               : const Text('Upload Photo Proof')),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.primary,
@@ -420,10 +442,7 @@ class OrderDetailView extends StatelessWidget {
                           const Icon(Icons.access_time_rounded,
                               size: 16, color: AppColors.textSecondary),
                           const SizedBox(width: 8),
-                          Text(
-                            'Delivered: ',
-                            style: AppTextStyles.bodyMedium,
-                          ),
+                          Text('Delivered: ', style: AppTextStyles.bodyMedium),
                           Expanded(
                             child: Text(
                               _formatDeliveredAt(order.deliveredAt!),
@@ -499,25 +518,24 @@ class OrderDetailView extends StatelessWidget {
     }
   }
 
-  /// Trims ISO datetime like "2024-11-05T14:32:00Z" → "05 Nov 2024, 2:32 PM"
   String _formatDeliveredAt(String raw) {
     try {
       final dt = DateTime.parse(raw).toLocal();
       const months = [
-        'Jan','Feb','Mar','Apr','May','Jun',
-        'Jul','Aug','Sep','Oct','Nov','Dec'
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
       ];
       final h = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
       final m = dt.minute.toString().padLeft(2, '0');
       final ampm = dt.hour < 12 ? 'AM' : 'PM';
       return '${dt.day} ${months[dt.month - 1]} ${dt.year}, $h:$m $ampm';
     } catch (_) {
-      // If parsing fails, just truncate the raw string
       return raw.length > 20 ? '${raw.substring(0, 20)}…' : raw;
     }
   }
 
-  void _showImagePicker(BuildContext context, OrdersController controller, int orderId) {
+  void _showImagePicker(
+      BuildContext context, OrdersController controller, int orderId) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -533,19 +551,22 @@ class OrderDetailView extends StatelessWidget {
               onTap: () async {
                 Get.back();
                 final picker = ImagePicker();
-                final file = await picker.pickImage(source: ImageSource.camera);
+                final file =
+                    await picker.pickImage(source: ImageSource.camera);
                 if (file != null) {
                   controller.uploadDeliveryProof(orderId, file.path);
                 }
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: AppColors.primary),
+              leading:
+                  const Icon(Icons.photo_library, color: AppColors.primary),
               title: const Text('Choose from Gallery'),
               onTap: () async {
                 Get.back();
                 final picker = ImagePicker();
-                final file = await picker.pickImage(source: ImageSource.gallery);
+                final file =
+                    await picker.pickImage(source: ImageSource.gallery);
                 if (file != null) {
                   controller.uploadDeliveryProof(orderId, file.path);
                 }
@@ -619,16 +640,12 @@ class _GlassScannerButton extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.qr_code_scanner_rounded,
-                  size: 16,
-                  color: _iconGreen,
-                ),
+                const Icon(Icons.qr_code_scanner_rounded,
+                    size: 16, color: _iconGreen),
                 const SizedBox(width: 6),
                 Text(
                   'Scanner',
-                  style: AppTextStyles.labelMedium
-                      .copyWith(color: Colors.white),
+                  style: AppTextStyles.labelMedium.copyWith(color: Colors.white),
                 ),
               ],
             ),
@@ -692,12 +709,12 @@ class _OrderItemCard extends StatelessWidget {
               width: 52,
               height: 52,
               child: imageUrl != null && imageUrl!.isNotEmpty
-                ? Image.network(
-                    ImageUtils.getFullUrl(imageUrl) ?? '',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => _imgPlaceholder(),
-                  )
-                : _imgPlaceholder(),
+                  ? Image.network(
+                      ImageUtils.getFullUrl(imageUrl) ?? '',
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _imgPlaceholder(),
+                    )
+                  : _imgPlaceholder(),
             ),
           ),
           const SizedBox(width: 14),
@@ -728,8 +745,7 @@ class _OrderItemCard extends StatelessWidget {
                   children: [
                     SizedBox(
                       width: 64,
-                      child:
-                          Text('Quantity', style: AppTextStyles.bodyMedium),
+                      child: Text('Quantity', style: AppTextStyles.bodyMedium),
                     ),
                     Expanded(
                       child: Text(

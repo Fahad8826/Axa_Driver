@@ -50,107 +50,116 @@ class NextDeliveryCard extends StatelessWidget {
 
           // ── Info + button — Expanded prevents any overflow ─────────────
           Expanded(
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      // Customer name
-      InfoRow(
-        icon: AppIcons.profile,
-        text: order.customerName.isNotEmpty ? order.customerName : '—',
-        isTitle: true,
-        iconSize: iconSize,
-      ),
-      const SizedBox(height: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Customer name
+                Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: InfoRow(
+                    icon: AppIcons.profile,
+                    text: order.customerName.isNotEmpty ? order.customerName : '—',
+                    isTitle: true,
+                    iconSize: iconSize,
+                  ),
+                ),
+                Text(
+                  AppDateUtils.formatShortDate(order.scheduledDate),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+                const SizedBox(height: 4),
 
-      // Address
-      InfoRow(
-        icon: AppIcons.map,
-        text: order.address.isNotEmpty ? order.address : '—',
-        iconSize: iconSize,
-      ),
-      const SizedBox(height: 4),
+                // Address
+                InfoRow(
+                  icon: AppIcons.map,
+                  text: order.address.isNotEmpty ? order.address : '—',
+                  iconSize: iconSize,
+                ),
+                const SizedBox(height: 4),
 
-      // Item lines
-      if (itemLines.isEmpty)
-        InfoRow(
-          icon: AppIcons.bag,
-          text: '0 × items',
-          iconSize: iconSize,
-        )
-      else
-        ...itemLines.map(
-          (line) => Padding(
-            padding: const EdgeInsets.only(bottom: 2),
-            child: InfoRow(
-              icon: AppIcons.bag,
-              text: line,
-              iconSize: iconSize,
+                // Item lines
+                if (itemLines.isEmpty)
+                  InfoRow(
+                    icon: AppIcons.bag,
+                    text: '0 × items',
+                    iconSize: iconSize,
+                  )
+                else
+                  ...itemLines.map(
+                    (line) => Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: InfoRow(
+                        icon: AppIcons.bag,
+                        text: line,
+                        iconSize: iconSize,
+                      ),
+                    ),
+                  ),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    SizedBox(
+                      height: 34,
+                      child: ElevatedButton(
+                        
+                        onPressed: () {
+                          Get.toNamed(
+                            AppRoutes.navigation,
+                            arguments: {
+                              'orderId': order.id,
+                              'destLat': double.tryParse(order.latitude) ?? 0.0,
+                              'destLng':
+                                  double.tryParse(order.longitude) ?? 0.0,
+                              'orderType': 'today', // ← add this
+                            },
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.white,
+                          elevation: 0,
+                          shape: const StadiumBorder(),
+                          minimumSize: const Size(0, 34),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SvgPicture.asset(
+                              AppIcons.map,
+                              width: 14,
+                              height: 14,
+                              colorFilter: const ColorFilter.mode(
+                                AppColors.white,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              'Start Navigation',
+                              style: AppTextStyles.buttonSmall.copyWith(
+                                fontSize: 12,
+                                color: AppColors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ),
-      const SizedBox(height: 4),
-      InfoRow(
-        icon: AppIcons.calender,
-        text: AppDateUtils.formatShortDate(order.scheduledDate),
-        iconSize: iconSize,
-      ),
-      const SizedBox(height: 8),
-
-      // ── Button pinned to bottom-right ──
-      Row(
-  mainAxisAlignment: MainAxisAlignment.end,
-  children: [
-    SizedBox(
-      height: 34,
-      child: ElevatedButton(
-        onPressed: () {
-          Get.toNamed(
-            AppRoutes.navigation,
-            arguments: {
-              'orderId': order.id,
-              'destLat': double.tryParse(order.latitude) ?? 0.0,
-              'destLng': double.tryParse(order.longitude) ?? 0.0,
-            },
-          );
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.white,
-          elevation: 0,
-          shape: const StadiumBorder(),
-          minimumSize: const Size(0, 34),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SvgPicture.asset(
-              AppIcons.map,
-              width: 14,
-              height: 14,
-              colorFilter: const ColorFilter.mode(
-                AppColors.white,
-                BlendMode.srcIn,
-              ),
-            ),
-            const SizedBox(width: 5),
-            Text(
-              'Start Navigation',
-              style: AppTextStyles.buttonSmall.copyWith(
-                fontSize: 12,
-                color: AppColors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  ],
-),
-    ],
-  ),
-),
         ],
       ),
     );
@@ -182,13 +191,13 @@ class _CircleImage extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-        color: AppColors.primarySurface,
-        child: Center(
-          child: Icon(
-            Icons.water_drop_rounded,
-            color: AppColors.primary,
-            size: size * 0.45,
-          ),
-        ),
-      );
+    color: AppColors.primarySurface,
+    child: Center(
+      child: Icon(
+        Icons.water_drop_rounded,
+        color: AppColors.primary,
+        size: size * 0.45,
+      ),
+    ),
+  );
 }

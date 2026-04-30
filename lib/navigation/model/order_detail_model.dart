@@ -3,6 +3,7 @@ class OrderDetailModel {
   final String status;
   final String customerName;
   final String customerAddress;
+  final String customerPhone;
   final double customerLat;
   final double customerLng;
   final List<DetailWaterCan> waterCans;
@@ -17,6 +18,7 @@ class OrderDetailModel {
     required this.id,
     required this.status,
     required this.customerName,
+    required this.customerPhone,
     required this.customerAddress,
     required this.customerLat,
     required this.customerLng,
@@ -34,9 +36,10 @@ class OrderDetailModel {
         id: json['id'] ?? 0,
         status: json['status'] ?? '',
         customerName: json['customer_name'] ?? '',
-        customerAddress: json['customer_address'] ?? '',
-        customerLat: (json['customer_lat'] as num?)?.toDouble() ?? 0.0,
-        customerLng: (json['customer_lng'] as num?)?.toDouble() ?? 0.0,
+        customerPhone: json['phone_number'] ?? '',
+        customerAddress: json['address'] ?? '',
+        customerLat: (json['customer_latitude'] as num?)?.toDouble() ?? 0.0,
+        customerLng: (json['customer_longitude'] as num?)?.toDouble() ?? 0.0,
         waterCans: (json['water_cans'] as List<dynamic>? ?? [])
             .map((e) => DetailWaterCan.fromJson(e as Map<String, dynamic>))
             .toList(),

@@ -1,7 +1,9 @@
+
 import 'dart:async';
 
 import 'package:axa_driver/core/network/dioclient.dart';
 import 'package:axa_driver/navigation/model/order_detail_model.dart';
+import 'package:axa_driver/orders/services/order_picked.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -18,6 +20,7 @@ class NavigationController extends GetxController {
 
   // ── Args ───────────────────────────────────────────────────────────────────
   late final int orderId;
+  late final String orderType; // ← declared here
 
   // Fallback coords from args (used until order loads)
   double? _argLat;
@@ -43,15 +46,20 @@ class NavigationController extends GetxController {
   final distance = '—'.obs;
   final duration = '—'.obs;
 
+  // ── Pick up state ──────────────────────────────────────────────────────────
+final isMarkingPicked = false.obs;
+final isPickedUp = false.obs;
+
   // ── Live GPS stream ────────────────────────────────────────────────────────
   StreamSubscription<Position>? _positionStream;
 
   @override
   void onInit() {
     super.onInit();
+    // ── Read ALL args here, once ──────────────────────────────────────────
     final args = Get.arguments as Map<String, dynamic>;
     orderId = args['orderId'] as int;
-    // Keep arg coords as fallback
+    orderType = args['orderType'] as String? ?? 'today';
     _argLat = (args['destLat'] as num?)?.toDouble();
     _argLng = (args['destLng'] as num?)?.toDouble();
 
@@ -73,13 +81,10 @@ class NavigationController extends GetxController {
 
     // 2. Resolve destination: prefer model coords over arg fallback
     final order = orderDetail.value;
-    if (order != null &&
-        order.customerLat != 0.0 &&
-        order.customerLng != 0.0) {
+    if (order != null && order.customerLat != 0.0 && order.customerLng != 0.0) {
       _destLat = order.customerLat;
       _destLng = order.customerLng;
-      debugPrint(
-          '[Nav] Destination from order model: $_destLat, $_destLng');
+      debugPrint('[Nav] Destination from order model: $_destLat, $_destLng');
     } else if (_argLat != null && _argLng != null) {
       _destLat = _argLat;
       _destLng = _argLng;
@@ -111,14 +116,14 @@ class NavigationController extends GetxController {
     _positionStream = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 15, // trigger every 15 metres of movement
+        distanceFilter: 15,
       ),
     ).listen(
       (pos) {
         if (_isDisposed) return;
         final newPos = LatLng(pos.latitude, pos.longitude);
         currentPosition.value = newPos;
-        _buildMarkers(); // keep driver marker current
+        _buildMarkers();
         debugPrint('[Nav] 📍 Position updated: ${pos.latitude}, ${pos.longitude}');
       },
       onError: (e) {
@@ -127,6 +132,20 @@ class NavigationController extends GetxController {
     );
     debugPrint('[Nav] ✅ Live GPS stream started');
   }
+
+  // ── Mark as Picked ─────────────────────────────────────────────────────────
+Future<void> markAsPicked() async {
+  if (isMarkingPicked.value || isPickedUp.value) return; // ← double guard
+  try {
+    isMarkingPicked(true);
+    final success = await OrderService.markAsPicked(orderId);
+    if (success) {
+      isPickedUp(true); // ← set once, never reset
+    }
+  } finally {
+    isMarkingPicked(false);
+  }
+}
 
   // ── GPS (initial fix) ──────────────────────────────────────────────────────
   Future<void> _fetchLocation() async {
@@ -149,7 +168,6 @@ class NavigationController extends GetxController {
 
       currentPosition.value = LatLng(position.latitude, position.longitude);
 
-      // Straight-line placeholder — replaced once real route loads
       if (_destLat != null && _destLng != null) {
         final distInMeters = Geolocator.distanceBetween(
           position.latitude,
@@ -158,8 +176,7 @@ class NavigationController extends GetxController {
           _destLng!,
         );
         distance.value = '${(distInMeters / 1000).toStringAsFixed(1)} km';
-        duration.value =
-            '${((distInMeters / 1000) / 40 * 60).round()} min';
+        duration.value = '${((distInMeters / 1000) / 40 * 60).round()} min';
       }
     } catch (e) {
       debugPrint('[Nav] Location error: $e');
@@ -171,7 +188,13 @@ class NavigationController extends GetxController {
     try {
       isLoading(true);
       error('');
-      final response = await _dio.get('/api/driver/order/$orderId/');
+
+      // Pick correct endpoint based on order type
+      final endpoint = orderType == 'nearest'
+          ? '/api/driver/nearest-order/$orderId/'
+          : '/api/driver/today-orders/$orderId/';
+
+      final response = await _dio.get(endpoint);
       orderDetail.value = OrderDetailModel.fromJson(
         response.data as Map<String, dynamic>,
       );
@@ -202,12 +225,14 @@ class NavigationController extends GetxController {
     };
 
     if (currentPosition.value != null) {
-      newMarkers.add(Marker(
-        markerId: const MarkerId('current'),
-        position: currentPosition.value!,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-        infoWindow: const InfoWindow(title: 'Your Location'),
-      ));
+      newMarkers.add(
+        Marker(
+          markerId: const MarkerId('current'),
+          position: currentPosition.value!,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          infoWindow: const InfoWindow(title: 'Your Location'),
+        ),
+      );
     }
 
     markers.assignAll(newMarkers);
@@ -229,11 +254,9 @@ class NavigationController extends GetxController {
 
     try {
       isRouteLoading(true);
-      debugPrint(
-          '[Nav] Fetching route: ${origin.latitude},${origin.longitude} → $_destLat,$_destLng');
+      debugPrint('[Nav] Fetching route: ${origin.latitude},${origin.longitude} → $_destLat,$_destLng');
 
-      final result = await PolylinePoints(apiKey: apiKey)
-          .getRouteBetweenCoordinates(
+      final result = await PolylinePoints(apiKey: apiKey).getRouteBetweenCoordinates(
         request: PolylineRequest(
           origin: PointLatLng(origin.latitude, origin.longitude),
           destination: PointLatLng(_destLat!, _destLng!),
@@ -259,23 +282,18 @@ class NavigationController extends GetxController {
           polylineId: const PolylineId('route'),
           color: const Color(0xFF1A73E8),
           width: 5,
-          points: result.points
-              .map((p) => LatLng(p.latitude, p.longitude))
-              .toList(),
+          points: result.points.map((p) => LatLng(p.latitude, p.longitude)).toList(),
           startCap: Cap.roundCap,
           endCap: Cap.roundCap,
           jointType: JointType.round,
         ),
       });
 
-      // Update stats with real route data
       if ((result.totalDistanceValue ?? 0) > 0) {
-        distance.value =
-            '${(result.totalDistanceValue! / 1000).toStringAsFixed(1)} km';
+        distance.value = '${(result.totalDistanceValue! / 1000).toStringAsFixed(1)} km';
       }
       if ((result.totalDurationValue ?? 0) > 0) {
-        duration.value =
-            '${(result.totalDurationValue! / 60).round()} min';
+        duration.value = '${(result.totalDurationValue! / 60).round()} min';
       }
 
       debugPrint('[Nav] ✅ Route loaded: ${distance.value}, ${duration.value}');
@@ -286,7 +304,7 @@ class NavigationController extends GetxController {
     }
   }
 
-  // ── Refresh route (called by refresh button) ───────────────────────────────
+  // ── Refresh route ──────────────────────────────────────────────────────────
   Future<void> refreshRoute() async {
     debugPrint('[Nav] 🔄 Refreshing route...');
     polylines.clear();
@@ -316,31 +334,19 @@ class NavigationController extends GetxController {
 
   void _fitBoundsIfReady() {
     final origin = currentPosition.value;
-    if (_isDisposed ||
-        origin == null ||
-        mapController == null ||
-        _destLat == null ||
-        _destLng == null) return;
+    if (_isDisposed || origin == null || mapController == null || _destLat == null || _destLng == null) return;
 
     final dest = LatLng(_destLat!, _destLng!);
     mapController!.animateCamera(
       CameraUpdate.newLatLngBounds(
         LatLngBounds(
           southwest: LatLng(
-            origin.latitude < dest.latitude
-                ? origin.latitude
-                : dest.latitude,
-            origin.longitude < dest.longitude
-                ? origin.longitude
-                : dest.longitude,
+            origin.latitude < dest.latitude ? origin.latitude : dest.latitude,
+            origin.longitude < dest.longitude ? origin.longitude : dest.longitude,
           ),
           northeast: LatLng(
-            origin.latitude > dest.latitude
-                ? origin.latitude
-                : dest.latitude,
-            origin.longitude > dest.longitude
-                ? origin.longitude
-                : dest.longitude,
+            origin.latitude > dest.latitude ? origin.latitude : dest.latitude,
+            origin.longitude > dest.longitude ? origin.longitude : dest.longitude,
           ),
         ),
         80,
@@ -348,33 +354,24 @@ class NavigationController extends GetxController {
     );
   }
 
-  /// Recenter map on driver's current position
   void centerOnDriver() {
     final pos = currentPosition.value;
     if (_isDisposed || mapController == null || pos == null) return;
-    mapController!.animateCamera(
-      CameraUpdate.newLatLngZoom(pos, 16),
-    );
+    mapController!.animateCamera(CameraUpdate.newLatLngZoom(pos, 16));
   }
 
-  /// Recenter map on delivery destination
   void centerOnDestination() {
     if (_isDisposed || mapController == null || _destLat == null) return;
-    mapController!.animateCamera(
-      CameraUpdate.newLatLngZoom(LatLng(_destLat!, _destLng!), 15),
-    );
+    mapController!.animateCamera(CameraUpdate.newLatLngZoom(LatLng(_destLat!, _destLng!), 15));
   }
 
-  // ── Launch external Google Maps navigation ─────────────────────────────────
+  // ── Launch Google Maps ─────────────────────────────────────────────────────
   Future<void> launchGoogleMaps() async {
     if (_destLat == null || _destLng == null) return;
 
-    final url = Uri.parse(
-      'google.navigation:q=$_destLat,$_destLng&mode=d',
-    );
+    final url = Uri.parse('google.navigation:q=$_destLat,$_destLng&mode=d');
     final fallback = Uri.parse(
-      'https://www.google.com/maps/dir/?api=1'
-      '&destination=$_destLat,$_destLng&travelmode=driving',
+      'https://www.google.com/maps/dir/?api=1&destination=$_destLat,$_destLng&travelmode=driving',
     );
 
     if (await canLaunchUrl(url)) {

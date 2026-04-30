@@ -1,15 +1,12 @@
 
-
-// i just need to edit the feild name of latitude and longitude on the model thats al 
-// currenlty on the server that is not worked yet after they compelting i will workout with the location things
-
-
-
 import 'package:axa_driver/core/utils/date_utils.dart';
 import 'package:axa_driver/core/utils/image_utils.dart';
 import 'package:axa_driver/core/theme/apptheme.dart';
 import 'package:axa_driver/navigation/controller/navigation_controller.dart';
 import 'package:axa_driver/navigation/model/order_detail_model.dart';
+import 'package:axa_driver/navigation/view/widgets/error_state.dart';
+import 'package:axa_driver/navigation/view/widgets/mapfab.dart';
+import 'package:axa_driver/navigation/view/widgets/stat_iteam.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -54,7 +51,7 @@ class NavigationView extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // Back
-                  _MapFab(
+                  MapFab(
                     icon: Icons.arrow_back_rounded,
                     onTap: () => Get.back(),
                   ),
@@ -62,7 +59,7 @@ class NavigationView extends StatelessWidget {
                   Row(
                     children: [
                       // Refresh route button
-                      Obx(() => _MapFab(
+                      Obx(() => MapFab(
                             icon: ctrl.isRouteLoading.value
                                 ? Icons.hourglass_top_rounded
                                 : Icons.refresh_rounded,
@@ -75,14 +72,14 @@ class NavigationView extends StatelessWidget {
                           )),
                       const SizedBox(width: 8),
                       // Center on destination
-                      _MapFab(
+                      MapFab(
                         icon: Icons.location_on_rounded,
                         onTap: ctrl.centerOnDestination,
                         iconColor: AppColors.statusCancelled,
                       ),
                       const SizedBox(width: 8),
                       // Center on driver
-                      _MapFab(
+                      MapFab(
                         icon: Icons.my_location_rounded,
                         onTap: ctrl.centerOnDriver,
                         iconColor: AppColors.primary,
@@ -157,7 +154,7 @@ class NavigationView extends StatelessWidget {
                   child: Row(
                     children: [
                       Obx(
-                        () => _StatItem(
+                        () => StatItem(
                           label: 'Distance',
                           value: ctrl.distance.value,
                           icon: Icons.directions_car_rounded,
@@ -172,7 +169,7 @@ class NavigationView extends StatelessWidget {
                         color: AppColors.divider,
                       ),
                       Obx(
-                        () => _StatItem(
+                        () => StatItem(
                           label: 'Duration',
                           value: ctrl.duration.value,
                           icon: Icons.access_time_rounded,
@@ -210,7 +207,7 @@ class NavigationView extends StatelessWidget {
                     );
                   }
                   if (ctrl.error.value.isNotEmpty) {
-                    return _ErrorState(
+                    return ErrorState(
                       message: ctrl.error.value,
                       onRetry: ctrl.fetchOrderDetail,
                     );
@@ -221,6 +218,7 @@ class NavigationView extends StatelessWidget {
                     order: order,
                     scrollController: scrollController,
                     onNavigate: ctrl.launchGoogleMaps,
+                    ctrl: ctrl, 
                   );
                 }),
               );
@@ -232,153 +230,10 @@ class NavigationView extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Map FAB
-// ─────────────────────────────────────────────────────────────────────────────
-class _MapFab extends StatelessWidget {
-  const _MapFab({
-    required this.icon,
-    required this.onTap,
-    this.iconColor = AppColors.textPrimary,
-  });
-  final IconData icon;
-  final VoidCallback onTap;
-  final Color iconColor;
 
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: const BoxDecoration(
-          color: AppColors.white,
-          shape: BoxShape.circle,
-          boxShadow: AppShadows.card,
-        ),
-        child: Icon(icon, size: 20, color: iconColor),
-      ),
-    );
-  }
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Stat Item
-// ─────────────────────────────────────────────────────────────────────────────
-class _StatItem extends StatelessWidget {
-  const _StatItem({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
 
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(label, style: AppTextStyles.bodySmall),
-              Text(
-                value,
-                style: AppTextStyles.labelLarge.copyWith(
-                  height: 1.2,
-                  color: AppColors.textPrimary,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Error State
-// ─────────────────────────────────────────────────────────────────────────────
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.message, required this.onRetry});
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: const BoxDecoration(
-                color: AppColors.statusCancelledSurface,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.error_outline_rounded,
-                color: AppColors.statusCancelled,
-                size: 30,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Something went wrong',
-              style: AppTextStyles.headingSmall,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              message,
-              style: AppTextStyles.bodyMedium,
-              textAlign: TextAlign.center,
-              maxLines: 5,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: 140,
-              height: AppDimens.buttonHeightSmall,
-              child: ElevatedButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: const Text('Retry'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Bottom Sheet Content
@@ -388,10 +243,12 @@ class _BottomSheetContent extends StatelessWidget {
     required this.order,
     required this.scrollController,
     required this.onNavigate,
+    required this.ctrl,
   });
   final OrderDetailModel order;
   final ScrollController scrollController;
   final VoidCallback onNavigate;
+  final NavigationController ctrl;
 
   @override
   Widget build(BuildContext context) {
@@ -468,6 +325,64 @@ class _BottomSheetContent extends StatelessWidget {
           ),
         ),
 
+        // ── Mark as Picked button ──────────────────────────────────────────
+        // ── Mark as Picked button ──────────────────────────────────────────
+SliverToBoxAdapter(
+  child: Obx(() {
+    // Hide if already picked up this session OR status is already beyond assigned
+    final status = order.status.toLowerCase();
+    final alreadyPicked = status == 'picked' ||
+        status == 'delivered' ||
+        status == 'cancelled';
+
+    if (ctrl.isPickedUp.value || alreadyPicked) {
+      return const SizedBox(height: 14);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      child: SizedBox(
+        width: double.infinity,
+        height: 44,
+        child: ElevatedButton.icon(
+          onPressed: ctrl.isMarkingPicked.value
+              ? null
+              : () async {
+                  await ctrl.markAsPicked();
+                  // Button auto-hides via isPickedUp flag after success
+                },
+          icon: ctrl.isMarkingPicked.value
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(
+                  Icons.check_circle_outline_rounded,
+                  size: 18,
+                  color: Colors.white,
+                ),
+          label: Text(
+            'Mark as Picked',
+            style: AppTextStyles.labelMedium.copyWith(color: Colors.white),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.statusPending,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ),
+    );
+  }),
+),
+
         const SliverToBoxAdapter(child: SizedBox(height: 14)),
 
         // Customer Details
@@ -494,6 +409,11 @@ class _BottomSheetContent extends StatelessWidget {
                   _DetailRow(
                     icon: Icons.calendar_today_outlined,
                     label: AppDateUtils.formatShortDate(order.scheduledDate),
+                  ),
+                  const SizedBox(height: 8),
+                  _DetailRow(
+                    icon: Icons.phone,
+                    label: order.customerPhone,
                   ),
                 ],
               ),
